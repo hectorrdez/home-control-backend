@@ -1,0 +1,23 @@
+meta {
+  name: Control: unknown entity
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/entities/switch.does_not_exist/action
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"action":"turn_off"}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Control: disallowed domain
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/entities/sensor.sensor_salon_temperatura/action
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"action":"turn_on"}
+}
+
+assert {
+  res.status: eq 403
+}

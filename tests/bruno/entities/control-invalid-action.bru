@@ -1,0 +1,23 @@
+meta {
+  name: Control: invalid action
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/entities/switch.interruptor_bano_interruptor_2/action
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"action":"explode"}
+}
+
+assert {
+  res.status: eq 400
+}

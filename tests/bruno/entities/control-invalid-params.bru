@@ -1,0 +1,23 @@
+meta {
+  name: Control: param not allowed
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/entities/switch.interruptor_bano_interruptor_2/action
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"action":"turn_on","params":{"evil":1}}
+}
+
+assert {
+  res.status: eq 400
+}
