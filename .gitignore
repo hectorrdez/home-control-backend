@@ -14,3 +14,6 @@ data/
 .claude/relay.prompt.txt
 .claude/relay.launch.*
 .claude/kanban.local.json
+.scannerwork/
+.sonar-home/
+.sonar-scan.log

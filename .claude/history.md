@@ -8,5 +8,5 @@ id|slug|state|role|commit|commit_url
 003|entity-control|ENDED|backend|7a9bdb1|https://github.com/hectorrdez/home-control-backend/commit/7a9bdb1
 004|areas|ENDED|backend|fb61dc3|https://github.com/hectorrdez/home-control-backend/commit/fb61dc3
 005|realtime-stream|ENDED|backend|3c0fc76|https://github.com/hectorrdez/home-control-backend/commit/3c0fc76
-007|history|ENDED|backend||
+007|history|ENDED|backend|d46148c|https://github.com/hectorrdez/home-control-backend/commit/d46148c
 006|deploy-dokploy|PENDING|backend||
