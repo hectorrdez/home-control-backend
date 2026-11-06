@@ -1,0 +1,63 @@
+# Production stack (e.g. Dokploy with compose source = Git, composePath =
+# docker/compose.prod.yaml). All config comes from the platform's environment
+# via ${VAR} interpolation; no .env file is baked into the image.
+# The DB is only reachable on the internal network (no published port).
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - target: 3002
+        published: ${API_PORT:-3002}
+        protocol: tcp
+        mode: host
+    environment:
+      NODE_ENV: production
+      API_PORT: "3002"
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_SECURE: ${EMAIL_SECURE:-false}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-app}
+      DB_USER: ${DB_USER:-app}
+      DB_PASS: ${DB_PASS:?Set DB_PASS}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-app}
+      MYSQL_USER: ${DB_USER:-app}
+      MYSQL_PASSWORD: ${DB_PASS:?Set DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?Set DB_ROOT_PASS}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ../db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  db_data:

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+data/
+
+# harness
+.claude/handoff.md
+.claude/relay.pid
+.claude/relay.state
+.claude/relay.log
+.claude/relay.prompt.txt
+.claude/relay.launch.*
+.claude/kanban.local.json
