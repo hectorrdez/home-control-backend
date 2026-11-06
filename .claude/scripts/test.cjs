@@ -33,7 +33,10 @@ const BRUNO_ENV = 'local';
   }
 
   console.log('[3/3] Bruno collection (regression)...');
-  if (run('npx', ['@usebruno/cli', 'run', BRUNO_DIR, '--env', BRUNO_ENV, '--recursive']) !== 0) {
+  // Bruno CLI 2.x runs only from the collection root and has no --recursive;
+  // use -r from inside the collection. Repo .env is passed so {{process.env.API_TOKEN}} resolves.
+  const repoEnv = { ...process.env, ...require('dotenv').parse(fs.readFileSync('.env')) };
+  if (run('npx', ['@usebruno/cli', 'run', '--env', BRUNO_ENV, '-r'], { cwd: BRUNO_DIR, env: repoEnv }) !== 0) {
     console.log('FAIL: one or more requests failed');
     process.exit(1);
   }

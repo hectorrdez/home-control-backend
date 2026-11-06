@@ -1,0 +1,27 @@
+meta {
+  name: HA status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/ha/status
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data[0].online: eq true
+}
+
+tests {
+  test("HA is online and envelope is an array", function() {
+    expect(res.body.data).to.be.an("array");
+    expect(res.body.data[0].online).to.equal(true);
+  });
+}
