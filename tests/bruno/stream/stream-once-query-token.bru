@@ -1,0 +1,22 @@
+meta {
+  name: Stream connects with ?token= (EventSource fallback)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/stream?once=1&token={{process.env.API_TOKEN}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("query token opens the stream", function() {
+    expect(res.getHeader("content-type")).to.include("text/event-stream");
+    expect(res.body).to.include("event: ready");
+  });
+}

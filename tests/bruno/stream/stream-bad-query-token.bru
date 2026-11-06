@@ -1,0 +1,22 @@
+meta {
+  name: Stream rejects a wrong ?token=
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/stream?once=1&token=not-the-token
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("wrong token gets the typed envelope and no stream", function() {
+    expect(res.body.error).to.equal("not_authorized");
+    expect(JSON.stringify(res.body)).to.not.include("not-the-token");
+  });
+}

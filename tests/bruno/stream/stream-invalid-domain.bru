@@ -1,0 +1,25 @@
+meta {
+  name: Stream rejects an invalid domain filter
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/stream?domain=Light
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("invalid domain returns the typed error", function() {
+    expect(res.body.error).to.equal("invalid_domain");
+  });
+}

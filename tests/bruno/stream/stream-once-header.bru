@@ -1,0 +1,26 @@
+meta {
+  name: Stream connects with header token (once)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/stream?once=1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("opens an event stream and sends the ready frame", function() {
+    expect(res.getHeader("content-type")).to.include("text/event-stream");
+    expect(res.body).to.include("event: ready");
+  });
+}

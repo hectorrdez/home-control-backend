@@ -21,7 +21,10 @@ export function apiKeyGate(req: Request, _res: Response, next: NextFunction): vo
   if (!expected || req.method === "OPTIONS" || (req.method === "GET" && req.path === "/health")) {
     return next();
   }
-  const given = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+  // EventSource cannot set headers, so the SSE stream also accepts `?token=`.
+  // Only that route: a token in a query string is easier to leak elsewhere.
+  const fromQuery = req.path === "/stream" && typeof req.query.token === "string" ? req.query.token : undefined;
+  const given = (req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? fromQuery ?? "").trim();
   if (!given) return next(new MissingCredentialsError("Missing API key"));
   if (!same(given, expected)) return next(new NotAuthorizedError("Invalid API key"));
   next();
