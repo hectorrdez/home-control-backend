@@ -70,7 +70,7 @@ export async function fetchAreaIndex(): Promise<Map<string, AreaRef>> {
   const byEntity = new Map<string, AreaRef>();
   for (const line of text.split("\n")) {
     const [entityId, areaId, areaName] = line.trim().split("|");
-    if (entityId && areaId) byEntity.set(entityId, { areaId, areaName: areaName ?? areaId });
+    if (entityId && areaId) byEntity.set(entityId, { areaId, areaName: areaName || areaId });
   }
   areaCache = { at: Date.now(), byEntity };
   return byEntity;
