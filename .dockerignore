@@ -4,5 +4,7 @@ dist
 .env
 .env.*
 tests
-
+.claude
+.scannerwork
+.sonar-home
 data

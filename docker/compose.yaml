@@ -1,43 +1,18 @@
+# Single service, no database. All config from the environment (Dokploy env or
+# a local .env via `--env-file`). Dokploy: compose source = Git, composePath =
+# docker/compose.yaml. The container always listens on 3002.
 services:
   api:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:${API_PORT:-3002}:3002"
+      - "${PUBLISH_PORT:-3002}:3002"
     environment:
-      API_PORT: 3002
-      API_TOKEN: ${API_TOKEN:-}
+      NODE_ENV: production
+      API_PORT: "3002"
+      HA_URL: ${HA_URL:?Set HA_URL}
+      HA_TOKEN: ${HA_TOKEN:?Set HA_TOKEN}
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
-      EMAIL_HOST: ${EMAIL_HOST:-}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_SECURE: ${EMAIL_SECURE:-false}
-      EMAIL_USER: ${EMAIL_USER:-}
-      EMAIL_PASS: ${EMAIL_PASS:-}
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_NAME: ${DB_NAME:-app}
-      DB_USER: ${DB_USER:-app}
-      DB_PASS: ${DB_PASS:?Set DB_PASS in .env}
-    depends_on:
-      db:
-        condition: service_healthy
-  db:
-    image: mysql:8.4
-    environment:
-      MYSQL_DATABASE: ${DB_NAME:-app}
-      MYSQL_USER: ${DB_USER:-app}
-      MYSQL_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?Set DB_ROOT_PASS in .env}
-    ports:
-      - "127.0.0.1:${DB_PORT:-3306}:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ../db:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-volumes:
-  db_data:

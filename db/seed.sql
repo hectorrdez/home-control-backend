@@ -1,1 +1,0 @@
--- Static / reference data. Keep idempotent: INSERT ... ON DUPLICATE KEY UPDATE.
