@@ -41,3 +41,26 @@ export async function haGet<T = unknown>(path: string): Promise<T> {
     throw new HaUnexpectedResponseError("Home Assistant returned a non-JSON body");
   }
 }
+
+/** POST a JSON body to a Home Assistant REST path and return the raw text reply (e.g. /api/template). */
+export async function haPostText(path: string, body: unknown): Promise<string> {
+  const base = (process.env.HA_URL ?? "").replace(/\/+$/, "");
+  const token = process.env.HA_TOKEN ?? "";
+  if (!base || !token) throw new HaNotConfiguredError();
+
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => {
+    throw new HaUnreachableError();
+  });
+
+  if (res.status === 401 || res.status === 403) throw new HaUnauthorizedError();
+  if (!res.ok) throw new HaUnexpectedResponseError(`Home Assistant responded ${res.status}`);
+  return res.text();
+}

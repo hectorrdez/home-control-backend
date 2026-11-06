@@ -1,0 +1,33 @@
+meta {
+  name: Entities list
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/entities
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns a non-empty array of normalized entities", function() {
+    expect(res.body.data).to.be.an("array").that.is.not.empty;
+    const e = res.body.data[0];
+    expect(e).to.have.all.keys("entityId", "domain", "name", "state", "attributes", "area", "areaName", "lastChanged");
+    expect(e.entityId.split(".")[0]).to.equal(e.domain);
+  });
+  test("sorted by name", function() {
+    const names = res.body.data.map(e => e.name);
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    expect(names).to.deep.equal(sorted);
+  });
+}

@@ -7,3 +7,4 @@
 |--------|------|------|---------|----------|-------|
 | GET | /api/health | none | - | `{ data: [{ online: true }] }` | Liveness only (template). |
 | GET | /api/ha/status | Bearer API_TOKEN | - | `{ data: [{ online: true, message, version }] }` | Checks HA link (`GET /api/` + `GET /api/config`). Errors: `ha_not_configured` 503, `ha_unreachable` 503, `ha_unauthorized` 502, `ha_unexpected_response` 502. |
+| GET | /api/entities?domain=&area= | Bearer API_TOKEN | query: `domain` (HA domain), `area` (area id) both optional | `{ data: [{ entityId, domain, name, state, attributes, area, areaName, lastChanged }] }` sorted by name | `area` = HA area id or null; `attributes` = safe subset. Unknown filter -> `[]`. Area via HA `/api/template`, cached 30s. |

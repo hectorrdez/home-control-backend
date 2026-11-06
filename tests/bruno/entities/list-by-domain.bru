@@ -1,0 +1,26 @@
+meta {
+  name: Entities filtered by domain
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/entities?domain=light
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("every item belongs to the requested domain", function() {
+    expect(res.body.data).to.be.an("array");
+    res.body.data.forEach(e => expect(e.domain).to.equal("light"));
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Entities unknown filter returns empty
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/entities?domain=nope_domain&area=nope_area
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isEmpty
+}
