@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
     "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:unit:cov": "vitest run --coverage",
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js"
   },
@@ -21,9 +23,11 @@
     "@types/express": "^4.17.19",
     "@types/node": "^22.0.0",
     "@usebruno/cli": "^2.15.1",
+    "@vitest/coverage-v8": "5.0.5",
     "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.17",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "5.0.5"
   }
 }

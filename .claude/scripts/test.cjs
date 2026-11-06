@@ -20,19 +20,25 @@ const BRUNO_ENV = 'local';
 // ==============================================
 
 (async () => {
-  console.log('[1/3] Typecheck (tsc --noEmit)...');
+  console.log('[1/4] Typecheck (tsc --noEmit)...');
   if (run('npx', ['tsc', '--noEmit']) !== 0) {
     console.log('FAIL: typecheck');
     process.exit(1);
   }
 
-  console.log('[2/3] API reachable?');
+  console.log('[2/4] Unit tests (vitest)...');
+  if (run('npm', ['run', 'test:unit']) !== 0) {
+    console.log('FAIL: unit tests');
+    process.exit(1);
+  }
+
+  console.log('[3/4] API reachable?');
   if (!(await checkUrl(HEALTH_URL))) {
     console.log(`PRECONDITION: API not reachable at ${HEALTH_URL}. Start the server, then retry. This is NOT a regression.`);
     process.exit(2);
   }
 
-  console.log('[3/3] Bruno collection (regression)...');
+  console.log('[4/4] Bruno collection (regression)...');
   // Bruno CLI 2.x runs only from the collection root and has no --recursive;
   // use -r from inside the collection. Repo .env is passed so {{process.env.API_TOKEN}} resolves.
   const repoEnv = { ...process.env, ...require('dotenv').parse(fs.readFileSync('.env')) };

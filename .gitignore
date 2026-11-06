@@ -17,3 +17,6 @@ data/
 .scannerwork/
 .sonar-home/
 .sonar-scan.log
+
+# coverage
+coverage/
