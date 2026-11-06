@@ -1,0 +1,26 @@
+meta {
+  name: Aliases: GET no longer contains it
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/aliases
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("alias is gone", function() {
+    const hit = res.body.data.find((a) => a.entityId === "sensor.bruno_alias_test");
+    expect(hit).to.be.undefined;
+  });
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Aliases: GET lists the alias
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/aliases
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("contains the created alias", function() {
+    const hit = res.body.data.find((a) => a.entityId === "sensor.bruno_alias_test");
+    expect(hit).to.exist;
+    expect(hit.alias).to.equal("Patio battery");
+  });
+}

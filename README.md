@@ -18,7 +18,7 @@ no auth). Contract: `.claude/endpoints.md`.
 
 - `src/index.ts`, `src/app.ts`: bootstrap, CORS, API key gate, error handling.
 - `src/routes.ts`: aggregator mounted under `/api`.
-- `src/modules/<name>/`: `health`, `ha`, `entities`, `areas`, `stream`, `history`.
+- `src/modules/<name>/`: `health`, `ha`, `entities`, `areas`, `stream`, `history`, `aliases`.
 - `src/shared/`: `route()` wrapper, guards, error middleware.
 - `src/resources/`: controller/view templates, typed `errors/`, `utils/`.
 - `docker/`: `Dockerfile` (multi-stage, Node 22, `npm ci`) and `compose.yaml`.
@@ -39,6 +39,7 @@ stable snake_case code, never a stack.
 | `API_TOKEN` | Required in prod. `/api/*` needs `Authorization: Bearer <API_TOKEN>` except `GET /api/health`. Empty disables the gate (local dev). |
 | `CORS_ORIGINS` | Comma-separated allowlist, e.g. `https://home-control.hectorrdez.es,http://localhost:5173`. |
 | `LOG_TO_FILE` | `true` also writes CSV logs under `data/`. |
+| `ALIASES_FILE` | JSON file for user entity aliases. Default `/data/aliases.json` (container); local dev `./data/aliases.json`. Must be writable. |
 
 ## Deploy (Dokploy, homelab)
 
@@ -47,6 +48,12 @@ type Dockerfile (`docker/Dockerfile`), container port 3002 published on a host
 port (3041). Set the env vars above in Dokploy. The image has a healthcheck on
 `/api/health`. Alternative: compose source with `docker/compose.yaml`
 (`PUBLISH_PORT` sets the host port).
+
+**Aliases volume:** the API stores user entity aliases in one JSON file
+(`ALIASES_FILE`, default `/data/aliases.json`). In Dokploy (Dockerfile build
+type) add a volume mount for `/data`, e.g. named volume `home-control-aliases`,
+or aliases are lost on redeploy. Backup = copy that one file. The compose file
+already declares the `aliases-data` volume.
 
 ### Caddy
 

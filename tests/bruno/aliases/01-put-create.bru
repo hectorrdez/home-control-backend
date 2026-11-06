@@ -1,0 +1,31 @@
+meta {
+  name: Aliases: PUT creates and normalizes
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_alias_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"alias":"  Patio   battery "}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the stored, normalized alias", function() {
+    expect(res.body.data).to.be.an("array").with.length(1);
+    expect(res.body.data[0].entityId).to.equal("sensor.bruno_alias_test");
+    expect(res.body.data[0].alias).to.equal("Patio battery");
+  });
+}

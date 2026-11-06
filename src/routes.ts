@@ -5,6 +5,7 @@ import entitiesRoutes from "@modules/entities/entities.routes";
 import areasRoutes from "@modules/areas/areas.routes";
 import streamRoutes from "@modules/stream/stream.routes";
 import historyRoutes from "@modules/history/history.routes";
+import aliasesRoutes from "@modules/aliases/aliases.routes";
 // <modules:import>
 
 /**
@@ -20,4 +21,5 @@ router.use(entitiesRoutes);
 router.use(areasRoutes);
 router.use(streamRoutes);
 router.use(historyRoutes);
+router.use(aliasesRoutes);
 // <modules:use>

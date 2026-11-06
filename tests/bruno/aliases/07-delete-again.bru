@@ -1,0 +1,25 @@
+meta {
+  name: Aliases: DELETE is idempotent
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_alias_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("second delete still succeeds with empty data", function() {
+    expect(res.body.data).to.be.an("array").that.is.empty;
+  });
+}

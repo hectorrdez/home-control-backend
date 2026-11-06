@@ -13,6 +13,9 @@ WORKDIR /app
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+# Aliases file store (ALIASES_FILE, default /data/aliases.json). A named volume
+# mounted here inherits node ownership, so the non-root user can write it.
+RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 3002
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

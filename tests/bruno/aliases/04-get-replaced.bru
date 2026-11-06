@@ -1,0 +1,27 @@
+meta {
+  name: Aliases: GET shows replaced value
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/aliases
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one entry with the new alias", function() {
+    const hits = res.body.data.filter((a) => a.entityId === "sensor.bruno_alias_test");
+    expect(hits).to.have.length(1);
+    expect(hits[0].alias).to.equal("Patio trasero");
+  });
+}

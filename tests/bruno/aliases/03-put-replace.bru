@@ -1,0 +1,29 @@
+meta {
+  name: Aliases: PUT replaces existing
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_alias_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"alias":"Patio trasero"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the replaced alias", function() {
+    expect(res.body.data[0].alias).to.equal("Patio trasero");
+  });
+}

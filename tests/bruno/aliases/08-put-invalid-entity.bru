@@ -1,0 +1,29 @@
+meta {
+  name: Aliases: invalid entity id
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/Light.Bad
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"alias":"Luz"}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_entity_id error", function() {
+    expect(res.body.error).to.equal("invalid_entity_id");
+  });
+}

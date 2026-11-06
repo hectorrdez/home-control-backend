@@ -16,3 +16,9 @@ services:
       HA_TOKEN: ${HA_TOKEN:?Set HA_TOKEN}
       API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      ALIASES_FILE: ${ALIASES_FILE:-/data/aliases.json}
+    volumes:
+      - aliases-data:/data
+
+volumes:
+  aliases-data:

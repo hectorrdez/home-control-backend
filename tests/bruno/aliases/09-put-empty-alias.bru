@@ -1,0 +1,29 @@
+meta {
+  name: Aliases: empty alias
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_alias_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"alias":"   "}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_alias error", function() {
+    expect(res.body.error).to.equal("invalid_alias");
+  });
+}
