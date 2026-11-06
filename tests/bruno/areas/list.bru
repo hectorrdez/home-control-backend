@@ -33,6 +33,7 @@ tests {
       g.entities.forEach(e => {
         expect(e.entityId).to.be.a("string");
         expect(e.area).to.equal(g.areaId);
+        expect(e.deviceName === null || (typeof e.deviceName === "string" && e.deviceName.length > 0)).to.equal(true);
         ids.push(e.entityId);
       });
     });

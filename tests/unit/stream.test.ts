@@ -46,13 +46,17 @@ async function freshHub() {
 }
 
 let templateText = "light.kitchen|kitchen|Cocina\n";
+/** The device-name template shares /api/template with the area template; route it apart. */
+const deviceText = "light.kitchen|Mando cocina\n";
 
 beforeEach(() => {
   FakeWebSocket.instances = [];
   vi.stubGlobal("WebSocket", FakeWebSocket);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(templateText, { status: 200 }))
+    vi.fn(async (_url: string, init?: RequestInit) =>
+      new Response(String(init?.body).includes("device_attr") ? deviceText : templateText, { status: 200 })
+    )
   );
   process.env.HA_URL = "http://ha.test:8123/";
   process.env.HA_TOKEN = "hub-token";
@@ -109,6 +113,7 @@ describe("HaEventHub", () => {
       attributes: { friendly_name: "Luz", brightness: 10 },
       area: "kitchen",
       areaName: "Cocina",
+      deviceName: "Mando cocina",
       lastChanged: "2026-01-01T00:00:00+00:00",
     };
     expect(a).toHaveBeenCalledWith(expected);

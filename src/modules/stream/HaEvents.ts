@@ -1,5 +1,5 @@
 import Logger from "@utils/Logger";
-import { fetchAreaIndex, normalizeEntity, HaState, NormalizedEntity } from "@modules/ha/HaStates";
+import { fetchAreaIndex, fetchDeviceNameIndex, normalizeEntity, HaState, NormalizedEntity } from "@modules/ha/HaStates";
 
 type Listener = (entity: NormalizedEntity) => void;
 
@@ -75,8 +75,11 @@ class HaEventHub {
 
   private async onStateChanged(state: HaState | null | undefined): Promise<void> {
     if (!state || this.listeners.size === 0) return;
-    const areas = await fetchAreaIndex().catch(() => new Map());
-    const entity = normalizeEntity(state, areas);
+    const [areas, devices] = await Promise.all([
+      fetchAreaIndex().catch(() => new Map<string, never>()),
+      fetchDeviceNameIndex(),
+    ]);
+    const entity = normalizeEntity(state, areas, devices);
     for (const fn of this.listeners) fn(entity);
   }
 

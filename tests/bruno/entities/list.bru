@@ -22,8 +22,16 @@ tests {
   test("returns a non-empty array of normalized entities", function() {
     expect(res.body.data).to.be.an("array").that.is.not.empty;
     const e = res.body.data[0];
-    expect(e).to.have.all.keys("entityId", "domain", "name", "state", "attributes", "area", "areaName", "lastChanged");
+    expect(e).to.have.all.keys("entityId", "domain", "name", "state", "attributes", "area", "areaName", "deviceName", "lastChanged");
     expect(e.entityId.split(".")[0]).to.equal(e.domain);
+  });
+  test("deviceName is null or a non-empty string on every entity", function() {
+    res.body.data.forEach(e => {
+      expect(e.deviceName === null || (typeof e.deviceName === "string" && e.deviceName.length > 0)).to.equal(true);
+    });
+  });
+  test("at least one entity has a real device name", function() {
+    expect(res.body.data.some(e => typeof e.deviceName === "string")).to.equal(true);
   });
   test("sorted by name", function() {
     const names = res.body.data.map(e => e.name);

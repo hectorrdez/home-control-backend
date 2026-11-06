@@ -1,5 +1,11 @@
 import { haPostText } from "@modules/ha/HaClient";
-import { fetchAreaIndex, fetchState, normalizeEntity, NormalizedEntity } from "@modules/ha/HaStates";
+import {
+  fetchAreaIndex,
+  fetchDeviceNameIndex,
+  fetchState,
+  normalizeEntity,
+  NormalizedEntity,
+} from "@modules/ha/HaStates";
 import {
   DomainNotAllowedError,
   EntityNotFoundError,
@@ -74,5 +80,6 @@ export async function controlEntity(
   await haPostText(`/api/services/${domain}/${action}`, { entity_id: entityId, ...params });
 
   const fresh = (await fetchState(entityId)) ?? existing;
-  return normalizeEntity(fresh, await fetchAreaIndex());
+  const [areas, devices] = await Promise.all([fetchAreaIndex(), fetchDeviceNameIndex()]);
+  return normalizeEntity(fresh, areas, devices);
 }

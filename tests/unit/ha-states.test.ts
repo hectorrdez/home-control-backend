@@ -47,6 +47,7 @@ describe("normalizeEntity", () => {
       attributes: { friendly_name: "Luz cocina", brightness: 120 },
       area: "kitchen",
       areaName: "Cocina",
+      deviceName: null,
       lastChanged: "2026-01-01T10:00:00+00:00",
     });
   });

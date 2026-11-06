@@ -1,4 +1,11 @@
-import { fetchAreaIndex, fetchAreaList, fetchStates, normalizeEntity, NormalizedEntity } from "@modules/ha/HaStates";
+import {
+  fetchAreaIndex,
+  fetchAreaList,
+  fetchDeviceNameIndex,
+  fetchStates,
+  normalizeEntity,
+  NormalizedEntity,
+} from "@modules/ha/HaStates";
 
 export interface AreaGroup {
   areaId: string | null;
@@ -15,14 +22,19 @@ const byName = (a: { name: string }, b: { name: string }) =>
  * Every entity from HA states appears exactly once.
  */
 export async function listAreas(): Promise<AreaGroup[]> {
-  const [states, areaList, index] = await Promise.all([fetchStates(), fetchAreaList(), fetchAreaIndex()]);
+  const [states, areaList, index, devices] = await Promise.all([
+    fetchStates(),
+    fetchAreaList(),
+    fetchAreaIndex(),
+    fetchDeviceNameIndex(),
+  ]);
 
   const groups = new Map<string, AreaGroup>();
   for (const a of areaList) groups.set(a.areaId, { areaId: a.areaId, name: a.areaName, entities: [] });
 
   const unassigned: AreaGroup = { areaId: null, name: "Unassigned", entities: [] };
   for (const s of states) {
-    const entity = normalizeEntity(s, index);
+    const entity = normalizeEntity(s, index, devices);
     if (entity.area === null) {
       unassigned.entities.push(entity);
       continue;

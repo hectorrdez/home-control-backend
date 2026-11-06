@@ -1,3 +1,4 @@
+import Logger from "@utils/Logger";
 import { haGet, haPostText } from "./HaClient";
 
 /** Raw Home Assistant state object (only the fields we read). */
@@ -17,6 +18,8 @@ export interface NormalizedEntity {
   attributes: Record<string, unknown>;
   area: string | null;
   areaName: string | null;
+  /** HA device name (name_by_user, else name); null when there is no device or it is unknown. */
+  deviceName: string | null;
   lastChanged: string;
 }
 
@@ -93,7 +96,63 @@ export async function fetchAreaList(): Promise<AreaRef[]> {
   return areas;
 }
 
-export function normalizeEntity(s: HaState, areas: Map<string, AreaRef>): NormalizedEntity {
+const DEVICE_CACHE_MS = 60_000;
+/** A failed lookup is retried sooner than a successful one is refreshed. */
+const DEVICE_FAIL_CACHE_MS = 10_000;
+let deviceCache: { at: number; ttl: number; byEntity: Map<string, string> } | null = null;
+let deviceInflight: Promise<Map<string, string>> | null = null;
+
+const DEVICE_NAME_TEMPLATE =
+  "{% for s in states %}{{ s.entity_id }}|" +
+  "{{ device_attr(s.entity_id, 'name_by_user') or device_attr(s.entity_id, 'name') or '' }}\n" +
+  "{% endfor %}";
+
+/** Parses `entity_id|device name` lines. Splits on the first `|` only; names may contain `|`. */
+export function parseDeviceNames(text: string): Map<string, string> {
+  const byEntity = new Map<string, string>();
+  for (const line of text.split("\n")) {
+    const cut = line.indexOf("|");
+    if (cut < 0) continue;
+    const entityId = line.slice(0, cut).trim();
+    const name = line.slice(cut + 1).trim();
+    if (entityId.includes(".") && name) byEntity.set(entityId, name);
+  }
+  return byEntity;
+}
+
+/**
+ * entity_id -> HA device name, resolved with ONE batched template call per cache window.
+ * Concurrent callers during a refresh share the same in-flight request.
+ * Never rejects: any failure logs a warning and yields an empty map (every deviceName = null).
+ */
+export async function fetchDeviceNameIndex(): Promise<Map<string, string>> {
+  if (deviceCache && Date.now() - deviceCache.at < deviceCache.ttl) return deviceCache.byEntity;
+  if (deviceInflight) return deviceInflight;
+
+  deviceInflight = (async () => {
+    try {
+      const text = await haPostText("/api/template", { template: DEVICE_NAME_TEMPLATE });
+      const byEntity = parseDeviceNames(text);
+      deviceCache = { at: Date.now(), ttl: DEVICE_CACHE_MS, byEntity };
+      return byEntity;
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "unknown error";
+      Logger.write(`device names unavailable, deviceName=null: ${reason}`, "HaStates", "WARN");
+      const empty = new Map<string, string>();
+      deviceCache = { at: Date.now(), ttl: DEVICE_FAIL_CACHE_MS, byEntity: empty };
+      return empty;
+    } finally {
+      deviceInflight = null;
+    }
+  })();
+  return deviceInflight;
+}
+
+export function normalizeEntity(
+  s: HaState,
+  areas: Map<string, AreaRef>,
+  deviceNames?: Map<string, string>
+): NormalizedEntity {
   const domain = s.entity_id.split(".")[0];
   const attrs: Record<string, unknown> = {};
   for (const key of SAFE_ATTRIBUTES) {
@@ -109,6 +168,7 @@ export function normalizeEntity(s: HaState, areas: Map<string, AreaRef>): Normal
     attributes: attrs,
     area: area?.areaId ?? null,
     areaName: area?.areaName ?? null,
+    deviceName: deviceNames?.get(s.entity_id) ?? null,
     lastChanged: s.last_changed,
   };
 }
