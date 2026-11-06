@@ -1,0 +1,41 @@
+meta {
+  name: Areas with entities
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/areas
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns area groups, Unassigned last, each entity exactly once", function() {
+    expect(res.body.data).to.be.an("array");
+    const groups = res.body.data;
+    expect(groups.length).to.be.greaterThan(0);
+    const last = groups[groups.length - 1];
+    expect(last.areaId).to.equal(null);
+    expect(last.name).to.equal("Unassigned");
+    const ids = [];
+    groups.forEach(g => {
+      expect(g.areaId === null || typeof g.areaId === "string").to.equal(true);
+      expect(g.entities).to.be.an("array");
+      g.entities.forEach(e => {
+        expect(e.entityId).to.be.a("string");
+        expect(e.area).to.equal(g.areaId);
+        ids.push(e.entityId);
+      });
+    });
+    expect(new Set(ids).size).to.equal(ids.length);
+  });
+}

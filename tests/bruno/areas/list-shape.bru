@@ -1,0 +1,29 @@
+meta {
+  name: Areas: every group has a name and an entity list
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/areas
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("every group has a name and an entities array", function() {
+    res.body.data.forEach(g => {
+      expect(g.name).to.be.a("string");
+      expect(g).to.have.property("entities");
+      expect(g.entities).to.be.an("array");
+    });
+  });
+}

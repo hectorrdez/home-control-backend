@@ -76,6 +76,23 @@ export async function fetchAreaIndex(): Promise<Map<string, AreaRef>> {
   return byEntity;
 }
 
+const AREA_LIST_TEMPLATE = "{% for area in areas() %}{{ area }}|{{ area_name(area) }}\n{% endfor %}";
+let areaListCache: { at: number; areas: AreaRef[] } | null = null;
+
+/** Every area defined in HA, including areas with no entities. Cached like fetchAreaIndex. */
+export async function fetchAreaList(): Promise<AreaRef[]> {
+  if (areaListCache && Date.now() - areaListCache.at < AREA_CACHE_MS) return areaListCache.areas;
+
+  const text = await haPostText("/api/template", { template: AREA_LIST_TEMPLATE });
+  const areas: AreaRef[] = [];
+  for (const line of text.split("\n")) {
+    const [areaId, areaName] = line.trim().split("|");
+    if (areaId) areas.push({ areaId, areaName: areaName || areaId });
+  }
+  areaListCache = { at: Date.now(), areas };
+  return areas;
+}
+
 export function normalizeEntity(s: HaState, areas: Map<string, AreaRef>): NormalizedEntity {
   const domain = s.entity_id.split(".")[0];
   const attrs: Record<string, unknown> = {};

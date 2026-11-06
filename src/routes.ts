@@ -2,6 +2,7 @@ import { Router } from "express";
 import healthRoutes from "@modules/health/health.routes";
 import haRoutes from "@modules/ha/ha.routes";
 import entitiesRoutes from "@modules/entities/entities.routes";
+import areasRoutes from "@modules/areas/areas.routes";
 // <modules:import>
 
 /**
@@ -14,4 +15,5 @@ export const router: Router = Router();
 router.use(healthRoutes);
 router.use(haRoutes);
 router.use(entitiesRoutes);
+router.use(areasRoutes);
 // <modules:use>

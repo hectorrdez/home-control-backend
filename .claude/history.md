@@ -5,7 +5,8 @@
 id|slug|state|role|commit|commit_url
 001|ha-client|ENDED|backend|65dc503|https://github.com/hectorrdez/home-control-backend/commit/65dc503
 002|entities-list|ENDED|backend|3ad28df|https://github.com/hectorrdez/home-control-backend/commit/3ad28df
-003|entity-control|ENDED|backend||
-004|areas|PENDING|backend||
+003|entity-control|ENDED|backend|7a9bdb1|https://github.com/hectorrdez/home-control-backend/commit/7a9bdb1
+004|areas|ENDED|backend||
 005|realtime-stream|PENDING|backend||
+007|history|PENDING|backend||
 006|deploy-dokploy|PENDING|backend||
