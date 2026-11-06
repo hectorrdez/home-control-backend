@@ -1,0 +1,28 @@
+meta {
+  name: History: two entities, custom hours, request order kept
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/history?entityIds=sensor.sensor_altillo_humedad,switch.interruptor_bano_interruptor_2&hours=6
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns one item per requested entity, in order", function() {
+    expect(res.body.data.map(h => h.entityId)).to.deep.equal([
+      "sensor.sensor_altillo_humedad",
+      "switch.interruptor_bano_interruptor_2"
+    ]);
+  });
+}

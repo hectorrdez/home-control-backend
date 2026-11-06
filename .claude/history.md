@@ -7,6 +7,6 @@ id|slug|state|role|commit|commit_url
 002|entities-list|ENDED|backend|3ad28df|https://github.com/hectorrdez/home-control-backend/commit/3ad28df
 003|entity-control|ENDED|backend|7a9bdb1|https://github.com/hectorrdez/home-control-backend/commit/7a9bdb1
 004|areas|ENDED|backend|fb61dc3|https://github.com/hectorrdez/home-control-backend/commit/fb61dc3
-005|realtime-stream|ENDED|backend||
-007|history|PENDING|backend||
+005|realtime-stream|ENDED|backend|3c0fc76|https://github.com/hectorrdez/home-control-backend/commit/3c0fc76
+007|history|ENDED|backend||
 006|deploy-dokploy|PENDING|backend||

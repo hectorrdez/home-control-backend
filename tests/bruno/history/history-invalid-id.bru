@@ -1,0 +1,25 @@
+meta {
+  name: History: invalid entity id
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/history?entityIds=Light.Bad
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_entity_id error", function() {
+    expect(res.body.error).to.equal("invalid_entity_id");
+  });
+}

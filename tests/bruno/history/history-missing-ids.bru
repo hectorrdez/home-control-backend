@@ -1,0 +1,25 @@
+meta {
+  name: History: entityIds is required
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/history
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed missing_entity_ids error", function() {
+    expect(res.body.error).to.equal("missing_entity_ids");
+  });
+}

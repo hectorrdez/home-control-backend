@@ -1,0 +1,25 @@
+meta {
+  name: History: hours out of range
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/history?entityIds=switch.interruptor_bano_interruptor_2&hours=721
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_hours error", function() {
+    expect(res.body.error).to.equal("invalid_hours");
+  });
+}

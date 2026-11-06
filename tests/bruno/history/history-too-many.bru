@@ -1,0 +1,25 @@
+meta {
+  name: History: more than 20 entities
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/history?entityIds=light.l1,light.l2,light.l3,light.l4,light.l5,light.l6,light.l7,light.l8,light.l9,light.l10,light.l11,light.l12,light.l13,light.l14,light.l15,light.l16,light.l17,light.l18,light.l19,light.l20,light.l21
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed too_many_entities error", function() {
+    expect(res.body.error).to.equal("too_many_entities");
+  });
+}

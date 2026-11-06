@@ -1,0 +1,33 @@
+meta {
+  name: History: one entity, default window
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/history?entityIds=switch.interruptor_bano_interruptor_2
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one item per entity with ISO points", function() {
+    expect(res.body.data).to.be.an("array").with.lengthOf(1);
+    const h = res.body.data[0];
+    expect(h.entityId).to.equal("switch.interruptor_bano_interruptor_2");
+    expect(h.points).to.be.an("array");
+    h.points.forEach(p => {
+      expect(p.t).to.be.a("string");
+      expect(new Date(p.t).toISOString()).to.be.a("string");
+      expect(p.v).to.be.a("string");
+    });
+  });
+}
