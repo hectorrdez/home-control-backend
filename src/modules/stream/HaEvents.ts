@@ -30,7 +30,8 @@ class HaEventHub {
   }
 
   private connect(): void {
-    const base = (process.env.HA_URL ?? "").replace(/\/+$/, "");
+    let base = process.env.HA_URL ?? "";
+    while (base.endsWith("/")) base = base.slice(0, -1);
     const token = process.env.HA_TOKEN ?? "";
     if (!base || !token) {
       Logger.write("HA_URL or HA_TOKEN missing: state stream idle", "StreamHub", "WARN");

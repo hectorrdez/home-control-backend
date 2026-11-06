@@ -21,7 +21,8 @@ export function warnIfHaMisconfigured(): void {
  * The token is only sent as a header; it is never logged or echoed in errors.
  */
 export async function haGet<T = unknown>(path: string): Promise<T> {
-  const base = (process.env.HA_URL ?? "").replace(/\/+$/, "");
+  let base = process.env.HA_URL ?? "";
+  while (base.endsWith("/")) base = base.slice(0, -1);
   const token = process.env.HA_TOKEN ?? "";
   if (!base || !token) throw new HaNotConfiguredError();
 
@@ -44,7 +45,8 @@ export async function haGet<T = unknown>(path: string): Promise<T> {
 
 /** POST a JSON body to a Home Assistant REST path and return the raw text reply (e.g. /api/template). */
 export async function haPostText(path: string, body: unknown): Promise<string> {
-  const base = (process.env.HA_URL ?? "").replace(/\/+$/, "");
+  let base = process.env.HA_URL ?? "";
+  while (base.endsWith("/")) base = base.slice(0, -1);
   const token = process.env.HA_TOKEN ?? "";
   if (!base || !token) throw new HaNotConfiguredError();
 
