@@ -1,4 +1,5 @@
-import { JsonFileStore } from "../../shared/JsonFileStore";
+import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
+import type { TxSource } from "../../db/pool";
 import { AliasWriteFailedError } from "./AliasErrors";
 import { isValidAlias, isValidEntityId, MAX_ALIASES } from "./AliasValidation";
 
@@ -8,22 +9,33 @@ export interface AliasEntry {
 }
 
 /**
- * JSON file store for user entity aliases (see JsonFileStore for the
- * load / atomic serialized write / quarantine mechanics).
+ * Postgres document store for user entity aliases (see PgDocumentStore for the
+ * load / transactional serialized write mechanics).
  */
 export class AliasStore {
-  private store = new JsonFileStore<string>({
-    scope: "AliasStore",
-    property: "aliases",
-    entryLabel: "alias",
-    max: MAX_ALIASES,
-    parseEntry: (entityId, raw) => (isValidEntityId(entityId) && typeof raw === "string" && isValidAlias(raw) ? raw : undefined),
-    createWriteError: () => new AliasWriteFailedError(),
-  });
+  private store: PgDocumentStore<string>;
 
-  /** Loads the file synchronously at startup. Never throws. */
-  load(file: string): void {
-    this.store.load(file);
+  constructor(db?: TxSource) {
+    this.store = new PgDocumentStore<string>({
+      db,
+      scope: "AliasStore",
+      collection: "aliases",
+      legacyProperty: "aliases",
+      entryLabel: "alias",
+      max: MAX_ALIASES,
+      parseEntry: (entityId, raw) => (isValidEntityId(entityId) && typeof raw === "string" && isValidAlias(raw) ? raw : undefined),
+      createWriteError: () => new AliasWriteFailedError(),
+    });
+  }
+
+  /** Reads the collection from the database. Throws on a db error (startup fails). */
+  load(): Promise<void> {
+    return this.store.load();
+  }
+
+  /** One-time import of the legacy JSON file (see importLegacyJson). */
+  importLegacy(file: string): Promise<void> {
+    return importLegacyJson(this.store, file);
   }
 
   list(): AliasEntry[] {

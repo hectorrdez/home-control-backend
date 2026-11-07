@@ -1,4 +1,5 @@
-import { JsonFileStore } from "../../shared/JsonFileStore";
+import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
+import type { TxSource } from "../../db/pool";
 import { CalibrationWriteFailedError } from "./CalibrationErrors";
 import { isValidCalibrationRecord, isValidEntityId, MAX_CALIBRATIONS } from "./CalibrationValidation";
 
@@ -14,26 +15,37 @@ export interface CalibrationEntry extends CalibrationRecord {
 }
 
 /**
- * JSON file store for cover calibrations (see JsonFileStore for the
- * load / atomic serialized write / quarantine mechanics).
+ * Postgres document store for cover calibrations (see PgDocumentStore for the
+ * load / transactional serialized write mechanics).
  */
 export class CalibrationStore {
-  private store = new JsonFileStore<CalibrationRecord>({
-    scope: "CalibrationStore",
-    property: "covers",
-    entryLabel: "calibration",
-    max: MAX_CALIBRATIONS,
-    parseEntry: (entityId, raw) => {
-      if (!isValidEntityId(entityId) || !isValidCalibrationRecord(raw)) return undefined;
-      const r = raw as CalibrationRecord;
-      return { openMs: r.openMs, closeMs: r.closeMs, position: r.position, calibratedAt: r.calibratedAt };
-    },
-    createWriteError: () => new CalibrationWriteFailedError(),
-  });
+  private store: PgDocumentStore<CalibrationRecord>;
 
-  /** Loads the file synchronously at startup. Never throws. */
-  load(file: string): void {
-    this.store.load(file);
+  constructor(db?: TxSource) {
+    this.store = new PgDocumentStore<CalibrationRecord>({
+      db,
+      scope: "CalibrationStore",
+      collection: "calibrations",
+      legacyProperty: "covers",
+      entryLabel: "calibration",
+      max: MAX_CALIBRATIONS,
+      parseEntry: (entityId, raw) => {
+        if (!isValidEntityId(entityId) || !isValidCalibrationRecord(raw)) return undefined;
+        const r = raw as CalibrationRecord;
+        return { openMs: r.openMs, closeMs: r.closeMs, position: r.position, calibratedAt: r.calibratedAt };
+      },
+      createWriteError: () => new CalibrationWriteFailedError(),
+    });
+  }
+
+  /** Reads the collection from the database. Throws on a db error (startup fails). */
+  load(): Promise<void> {
+    return this.store.load();
+  }
+
+  /** One-time import of the legacy JSON file (see importLegacyJson). */
+  importLegacy(file: string): Promise<void> {
+    return importLegacyJson(this.store, file);
   }
 
   list(): CalibrationEntry[] {

@@ -1,0 +1,30 @@
+meta {
+  name: Persistence: PUT alias
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_persist_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"alias":"Persistencia test"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("stores the alias", function() {
+    expect(res.body.data).to.be.an("array");
+    expect(res.body.data.some((a) => a.entityId === "sensor.bruno_persist_test" && a.alias === "Persistencia test")).to.equal(true);
+  });
+}

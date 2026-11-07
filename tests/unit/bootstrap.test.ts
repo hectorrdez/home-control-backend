@@ -5,10 +5,13 @@ import { silenceConsole } from "./helpers";
 
 const listen = vi.fn((_port: number, cb?: () => void) => cb?.());
 const load = vi.fn();
+const importLegacy = vi.fn();
 
 // Stub the app and the alias store so importing the bootstrap never opens a port or touches /data.
 vi.mock("../../src/app", () => ({ default: { listen } }));
-vi.mock("@modules/aliases/AliasStore", () => ({ default: { load } }));
+vi.mock("@modules/aliases/AliasStore", () => ({ default: { load, importLegacy } }));
+vi.mock("@modules/calibrations/CalibrationStore", () => ({ default: { load, importLegacy } }));
+vi.mock("@modules/alert-rules/AlertRuleStore", () => ({ default: { load, importLegacy } }));
 
 // The database is stubbed: bootstrap must connect and migrate before it loads stores and listens.
 const connectDb = vi.fn(async () => undefined);
@@ -45,7 +48,7 @@ describe("bootstrap (src/index.ts)", () => {
     process.env.ALIASES_FILE = "/tmp/custom-aliases.json";
     await boot("4123");
     await vi.waitFor(() => expect(listen).toHaveBeenCalledWith(4123, expect.any(Function)));
-    expect(load).toHaveBeenCalledWith("/tmp/custom-aliases.json");
+    expect(importLegacy).toHaveBeenCalledWith("/tmp/custom-aliases.json");
   });
 
   it("connects and migrates before loading stores and listening", async () => {
@@ -75,7 +78,7 @@ describe("bootstrap (src/index.ts)", () => {
     await boot(undefined);
     await vi.waitFor(() => expect(listen).toHaveBeenCalled());
     expect(listen.mock.calls[0][0]).toBe(3002);
-    expect(load).toHaveBeenCalledWith("/data/aliases.json");
+    expect(importLegacy).toHaveBeenCalledWith("/data/aliases.json");
   });
 
   it.each(["0", "65536", "abc", "1.5"])("refuses to start with API_PORT=%s", async (port) => {

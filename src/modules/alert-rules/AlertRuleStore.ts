@@ -1,4 +1,5 @@
-import { JsonFileStore } from "../../shared/JsonFileStore";
+import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
+import type { TxSource } from "../../db/pool";
 import { AlertRulesWriteFailedError } from "./AlertRuleErrors";
 import { AlertRuleFields, MAX_ALERT_RULES, readRuleFields } from "./AlertRuleValidation";
 
@@ -11,22 +12,33 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
- * JSON file store for alert rules, keyed by rule id (see JsonFileStore for the
- * load / atomic serialized write / quarantine mechanics).
+ * Postgres document store for alert rules, keyed by rule id (see PgDocumentStore for the
+ * load / transactional serialized write mechanics).
  */
 export class AlertRuleStore {
-  private store = new JsonFileStore<AlertRuleFields>({
-    scope: "AlertRuleStore",
-    property: "rules",
-    entryLabel: "alert rule",
-    max: MAX_ALERT_RULES,
-    parseEntry: (id, raw) => (UUID_RE.test(id) ? readRuleFields(raw) : undefined),
-    createWriteError: () => new AlertRulesWriteFailedError(),
-  });
+  private store: PgDocumentStore<AlertRuleFields>;
 
-  /** Loads the file synchronously at startup. Never throws. */
-  load(file: string): void {
-    this.store.load(file);
+  constructor(db?: TxSource) {
+    this.store = new PgDocumentStore<AlertRuleFields>({
+      db,
+      scope: "AlertRuleStore",
+      collection: "alert_rules",
+      legacyProperty: "rules",
+      entryLabel: "alert rule",
+      max: MAX_ALERT_RULES,
+      parseEntry: (id, raw) => (UUID_RE.test(id) ? readRuleFields(raw) : undefined),
+      createWriteError: () => new AlertRulesWriteFailedError(),
+    });
+  }
+
+  /** Reads the collection from the database. Throws on a db error (startup fails). */
+  load(): Promise<void> {
+    return this.store.load();
+  }
+
+  /** One-time import of the legacy JSON file (see importLegacyJson). */
+  importLegacy(file: string): Promise<void> {
+    return importLegacyJson(this.store, file);
   }
 
   /** All rules sorted by entityId, then id. */

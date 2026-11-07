@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from "pg";
+import { Pool } from "pg";
 import Logger from "@utils/Logger";
 import { markDbDown, markDbUp } from "./health";
 
@@ -29,9 +29,14 @@ export async function query(sql: string, params?: unknown[]) {
   return result;
 }
 
+/** Anything that can hand out a dedicated client: the pool, or a fake in unit tests. */
+export interface TxSource extends Queryable {
+  connect(): Promise<Queryable & { release(broken?: boolean): void }>;
+}
+
 /** Runs `fn` inside BEGIN/COMMIT on one client. ROLLBACK when `fn` throws; the client is always released. */
-export async function withTransaction<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
-  const client: PoolClient = await pool.connect();
+export async function withTransaction<T>(fn: (tx: Queryable) => Promise<T>, source: TxSource = pool): Promise<T> {
+  const client: Queryable & { release(broken?: boolean): void } = await source.connect();
   let broken = false;
   try {
     await client.query("BEGIN");

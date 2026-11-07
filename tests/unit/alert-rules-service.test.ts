@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { randomUUID } from "crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import alertRuleStore from "@modules/alert-rules/AlertRuleStore";
 import {
   createAlertRule,
@@ -18,6 +18,8 @@ import {
 } from "@modules/alert-rules/AlertRuleErrors";
 import { InvalidEntityIdError } from "@modules/entities/EntityErrors";
 import { silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 let dir: string;
 let file: string;
@@ -29,11 +31,12 @@ const body = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "alert-svc-"));
   file = path.join(dir, "alert-rules.json");
-  alertRuleStore.load(file);
+  await alertRuleStore.load();
 });
 
 afterEach(() => {
@@ -46,7 +49,7 @@ describe("alert rules service", () => {
     expect(rule.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(rule).toMatchObject({ entityId: "light.kitchen", trigger: { type: "connects" }, level: "high" });
     expect(listAlertRules()).toEqual([rule]);
-    expect(JSON.parse(fs.readFileSync(file, "utf8")).rules[rule.id].message).toBe("Door opened");
+    expect(docs.snapshot("alert_rules")[rule.id].message).toBe("Door opened");
   });
 
   it("createAlertRule ignores an id sent in the body", async () => {
@@ -59,7 +62,7 @@ describe("alert rules service", () => {
     await expect(createAlertRule(body({ level: "x" }))).rejects.toBeInstanceOf(InvalidRuleError);
     await expect(createAlertRule(undefined)).rejects.toBeInstanceOf(InvalidRuleError);
     expect(listAlertRules()).toEqual([]);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements.filter((q) => q.startsWith("INSERT"))).toEqual([]);
   });
 
   it("createAlertRule refuses a second rule with the same entity and trigger, and allows another value", async () => {
@@ -124,8 +127,8 @@ describe("alert rules service", () => {
       ids.push(id);
       seeded[id] = { entityId: `light.l${i}`, trigger: { type: "connects" }, level: "low" };
     }
-    fs.writeFileSync(file, JSON.stringify({ version: 1, rules: seeded }));
-    alertRuleStore.load(file);
+    docs.seed("alert_rules", seeded);
+    await alertRuleStore.load();
 
     await expect(createAlertRule(body({ entityId: "light.new" }))).rejects.toBeInstanceOf(TooManyRulesError);
     await expect(replaceAlertRule(ids[0], body({ entityId: "light.l0", level: "off" }))).resolves.toHaveLength(1);

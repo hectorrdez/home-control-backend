@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import calibrationStore from "@modules/calibrations/CalibrationStore";
 import CalibrationsController from "@modules/calibrations/CalibrationsController";
 import calibrationsRoutes from "@modules/calibrations/calibrations.routes";
@@ -11,15 +11,18 @@ import {
   TooManyCalibrationsError,
 } from "@modules/calibrations/CalibrationErrors";
 import { fakeRes, silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 let dir: string;
 let file: string;
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "calib-ctrl-"));
   file = path.join(dir, "calibrations.json");
-  calibrationStore.load(file);
+  await calibrationStore.load();
 });
 
 afterEach(() => {

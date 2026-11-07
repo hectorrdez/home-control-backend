@@ -49,9 +49,9 @@ stable snake_case code, never a stack.
 | `API_TOKEN` | Required in prod. `/api/*` needs `Authorization: Bearer <API_TOKEN>` except `GET /api/health`. Empty disables the gate (local dev). |
 | `CORS_ORIGINS` | Comma-separated allowlist, e.g. `https://home-control.hectorrdez.es,http://localhost:5173`. |
 | `LOG_TO_FILE` | `true` also writes CSV logs under `data/`. |
-| `ALIASES_FILE` | JSON file for user entity aliases. Default `/data/aliases.json` (container); local dev `./data/aliases.json`. Must be writable. |
-| `CALIBRATIONS_FILE` | JSON file for cover open/close calibrations. Default `/data/calibrations.json` (container); local dev `./data/calibrations.json`. Same `/data` volume as aliases. |
-| `ALERT_RULES_FILE` | JSON file for alert rules. Default `/data/alert-rules.json` (container); local dev `./data/alert-rules.json`. Same `/data` volume as aliases. |
+| `ALIASES_FILE` | Legacy import source only: old JSON aliases file, imported once into Postgres when the aliases table is empty, then renamed `*.imported-<ms>`. Default `/data/aliases.json`. |
+| `CALIBRATIONS_FILE` | Legacy import source only (same one-time import as `ALIASES_FILE`). Default `/data/calibrations.json`. |
+| `ALERT_RULES_FILE` | Legacy import source only (same one-time import as `ALIASES_FILE`). Default `/data/alert-rules.json`. |
 
 ## Deploy (Dokploy, homelab)
 
@@ -61,13 +61,12 @@ port (3041). Set the env vars above in Dokploy. The image has a healthcheck on
 `/api/health`. Alternative: compose source with `docker/compose.yaml`
 (`PUBLISH_PORT` sets the host port).
 
-**Data volume:** the API stores user entity aliases (`ALIASES_FILE`, default
-`/data/aliases.json`) and cover calibrations (`CALIBRATIONS_FILE`, default
-`/data/calibrations.json`) and alert rules (`ALERT_RULES_FILE`, default
-`/data/alert-rules.json`) as small JSON files in `/data`. In Dokploy (Dockerfile build
-type) add a volume mount for `/data`, e.g. named volume `home-control-aliases`,
-or aliases, calibrations and alert rules are lost on redeploy. Backup = copy those files. The compose file
-already declares the `aliases-data` volume (it covers all three files).
+**Data:** aliases, calibrations and alert rules live in the Postgres `documents`
+table (see the `db` service in `docker/compose.yaml`). The old JSON files
+(`ALIASES_FILE`, `CALIBRATIONS_FILE`, `ALERT_RULES_FILE`, default `/data/*.json`)
+are a legacy import source only: at startup each one is imported once into an
+empty collection and renamed to `<file>.imported-<epochMs>`. A failed import is
+logged and the file is kept. Back up the database, not the JSON files.
 
 ### Caddy
 

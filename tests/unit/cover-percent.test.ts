@@ -11,6 +11,8 @@ import { normalizeEntity, HaState } from "@modules/ha/HaStates";
 import { haGet, haPostText } from "@modules/ha/HaClient";
 import EntitiesController from "@modules/entities/EntitiesController";
 import { fakeRes, silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 vi.mock("@modules/ha/HaClient", () => ({
   haGet: vi.fn(),
@@ -33,11 +35,12 @@ const services = () =>
   vi.mocked(haPostText).mock.calls.map(([p]) => String(p)).filter((p) => p.startsWith("/api/services/cover/")).map((p) => p.split("/").pop());
 const flush = () => calibrationStore.mutate(() => false);
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   vi.useFakeTimers();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "cover-percent-"));
-  calibrationStore.load(path.join(dir, "calibrations.json"));
+  await calibrationStore.load();
   vi.mocked(haGet).mockReset().mockResolvedValue([COVER_STATE]);
   vi.mocked(haPostText).mockReset().mockResolvedValue("");
 });

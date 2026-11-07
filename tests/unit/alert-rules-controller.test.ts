@@ -1,20 +1,23 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import alertRuleStore from "@modules/alert-rules/AlertRuleStore";
 import AlertRulesController from "@modules/alert-rules/AlertRulesController";
 import alertRulesRoutes from "@modules/alert-rules/alert-rules.routes";
 import { fakeRes, silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 let dir: string;
 let file: string;
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "alert-ctrl-"));
   file = path.join(dir, "alert-rules.json");
-  alertRuleStore.load(file);
+  await alertRuleStore.load();
 });
 
 afterEach(() => {

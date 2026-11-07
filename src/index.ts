@@ -23,9 +23,13 @@ async function bootstrap(): Promise<void> {
   await connectDb(pool);
   await migrate(pool);
   startDbPing(pool);
-  aliasStore.load(process.env.ALIASES_FILE || "/data/aliases.json");
-  calibrationStore.load(process.env.CALIBRATIONS_FILE || "/data/calibrations.json");
-  alertRuleStore.load(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
+  // Legacy JSON files are imported once (only into an empty collection) and renamed to .imported-*.
+  await aliasStore.load();
+  await aliasStore.importLegacy(process.env.ALIASES_FILE || "/data/aliases.json");
+  await calibrationStore.load();
+  await calibrationStore.importLegacy(process.env.CALIBRATIONS_FILE || "/data/calibrations.json");
+  await alertRuleStore.load();
+  await alertRuleStore.importLegacy(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
   app.listen(port, () => Logger.write(`API listening on port ${port}`));
 }
 

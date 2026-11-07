@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import calibrationStore from "@modules/calibrations/CalibrationStore";
 import {
   deleteCalibration,
@@ -15,15 +15,18 @@ import {
 } from "@modules/calibrations/CalibrationErrors";
 import { DomainNotAllowedError, InvalidEntityIdError } from "@modules/entities/EntityErrors";
 import { silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 let dir: string;
 let file: string;
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "calib-svc-"));
   file = path.join(dir, "calibrations.json");
-  calibrationStore.load(file);
+  await calibrationStore.load();
 });
 
 afterEach(() => {
@@ -58,7 +61,7 @@ describe("calibrations service", () => {
     expect(entry).toMatchObject({ entityId: "cover.a", openMs: 15000, closeMs: 14000, position: null });
     expect(typeof entry.calibratedAt).toBe("string");
     expect(listCalibrations()).toEqual([entry]);
-    expect(JSON.parse(fs.readFileSync(file, "utf8")).covers["cover.a"].openMs).toBe(15000);
+    expect(docs.snapshot("calibrations")["cover.a"].openMs).toBe(15000);
   });
 
   it("setCalibration replaces an existing entry and resets position", async () => {
@@ -78,7 +81,7 @@ describe("calibrations service", () => {
       InvalidCalibrationError
     );
     expect(listCalibrations()).toEqual([]);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements.filter((q) => q.startsWith("INSERT"))).toEqual([]);
   });
 
   it("refuses a new cover once 200 exist, but still allows replacing one", async () => {
@@ -86,8 +89,8 @@ describe("calibrations service", () => {
     for (let i = 0; i < 200; i++) {
       seeded[`cover.e${i}`] = { openMs: 1000, closeMs: 1000, position: null, calibratedAt: "2026-01-01T00:00:00.000Z" };
     }
-    fs.writeFileSync(file, JSON.stringify({ version: 1, covers: seeded }));
-    calibrationStore.load(file);
+    docs.seed("calibrations", seeded);
+    await calibrationStore.load();
 
     await expect(setCalibration("cover.new", { openMs: 1000, closeMs: 1000 })).rejects.toBeInstanceOf(
       TooManyCalibrationsError
@@ -105,7 +108,7 @@ describe("calibrations service", () => {
 
   it("deleteCalibration is idempotent and validates the entity id and domain", async () => {
     await expect(deleteCalibration("cover.nope")).resolves.toEqual([]);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements.filter((q) => q.startsWith("INSERT"))).toEqual([]);
     await expect(deleteCalibration("nope")).rejects.toBeInstanceOf(InvalidEntityIdError);
     await expect(deleteCalibration("switch.a")).rejects.toBeInstanceOf(DomainNotAllowedError);
   });

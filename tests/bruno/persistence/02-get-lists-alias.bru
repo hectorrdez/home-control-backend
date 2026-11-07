@@ -1,0 +1,25 @@
+meta {
+  name: Persistence: GET lists the alias
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/aliases
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("contains the stored alias", function() {
+    expect(res.body.data.some((a) => a.entityId === "sensor.bruno_persist_test")).to.equal(true);
+  });
+}

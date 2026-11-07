@@ -1,20 +1,23 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import aliasStore from "@modules/aliases/AliasStore";
 import { deleteAlias, listAliases, setAlias } from "@modules/aliases/AliasesService";
 import { InvalidAliasError, InvalidEntityIdError, TooManyAliasesError } from "@modules/aliases/AliasErrors";
 import { silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 let dir: string;
 let file: string;
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "aliases-svc-"));
   file = path.join(dir, "aliases.json");
-  aliasStore.load(file);
+  await aliasStore.load();
 });
 
 afterEach(() => {
@@ -27,7 +30,7 @@ describe("aliases service", () => {
       { entityId: "light.a", alias: "Luz cocina" },
     ]);
     expect(listAliases()).toEqual([{ entityId: "light.a", alias: "Luz cocina" }]);
-    expect(JSON.parse(fs.readFileSync(file, "utf8")).aliases).toEqual({ "light.a": "Luz cocina" });
+    expect(docs.snapshot("aliases")).toEqual({ "light.a": "Luz cocina" });
   });
 
   it("setAlias replaces an existing alias", async () => {
@@ -38,9 +41,9 @@ describe("aliases service", () => {
 
   it("setAlias with the same value is a no-op write", async () => {
     await setAlias("light.a", "Uno");
-    fs.rmSync(file);
+    docs.statements.length = 0;
     await setAlias("light.a", "Uno");
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements).toEqual([]);
   });
 
   it("setAlias validates the entity id and the alias before touching the store", async () => {
@@ -48,14 +51,14 @@ describe("aliases service", () => {
     await expect(setAlias("light.a", 3)).rejects.toBeInstanceOf(InvalidAliasError);
     await expect(setAlias("light.a", "  ")).rejects.toBeInstanceOf(InvalidAliasError);
     expect(listAliases()).toEqual([]);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements.filter((q) => q.startsWith("INSERT"))).toEqual([]);
   });
 
   it("refuses a new entity once 2000 aliases exist, but still allows updating an existing one", async () => {
     const seeded: Record<string, string> = {};
     for (let i = 0; i < 2000; i++) seeded[`light.e${i}`] = `A${i}`;
-    fs.writeFileSync(file, JSON.stringify({ version: 1, aliases: seeded }));
-    aliasStore.load(file);
+    docs.seed("aliases", seeded);
+    await aliasStore.load();
 
     await expect(setAlias("light.new", "Nuevo")).rejects.toBeInstanceOf(TooManyAliasesError);
     await expect(setAlias("light.e0", "Cambiado")).resolves.toEqual([{ entityId: "light.e0", alias: "Cambiado" }]);
@@ -70,7 +73,7 @@ describe("aliases service", () => {
 
   it("deleteAlias is idempotent for unknown entities", async () => {
     await expect(deleteAlias("light.nope")).resolves.toEqual([]);
-    expect(fs.existsSync(file)).toBe(false);
+    expect(docs.statements.filter((q) => q.startsWith("INSERT"))).toEqual([]);
   });
 
   it("deleteAlias validates the entity id", async () => {

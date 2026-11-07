@@ -6,6 +6,8 @@ import { CalibrationStore, CalibrationRecord } from "@modules/calibrations/Calib
 import { CoverMoves, defaultCoverMoveDeps } from "@modules/covers/CoverMoves";
 import { NotCalibratedError, PositionUnknownError } from "@modules/covers/CoverMoveErrors";
 import { silenceConsole } from "./helpers";
+const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
+vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, { on: () => undefined }); } } }));
 
 const ENTITY = "cover.kitchen";
 const OPEN_MS = 10000;
@@ -30,12 +32,13 @@ const flush = () => store.mutate(() => false);
 const stored = () => store.get(ENTITY)?.position;
 const services = () => post.mock.calls.map(([p]) => String(p).split("/").pop());
 
-beforeEach(() => {
+beforeEach(async () => {
+  docs.reset();
   silenceConsole();
   vi.useFakeTimers();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "cover-moves-"));
   store = new CalibrationStore();
-  store.load(path.join(dir, "calibrations.json"));
+  await store.load();
   post = vi.fn(async () => "");
   moves = new CoverMoves({ ...defaultCoverMoveDeps, store, post });
 });
@@ -266,7 +269,7 @@ describe("CoverMoves timer failures and restart", () => {
     await flush();
 
     const restarted = new CalibrationStore();
-    restarted.load(path.join(dir, "calibrations.json"));
+    await restarted.load();
     expect(restarted.get(ENTITY)?.position).toBe(null);
     expect(new CoverMoves({ ...defaultCoverMoveDeps, store: restarted, post }).estimatedPosition(ENTITY)).toBe(null);
   });
