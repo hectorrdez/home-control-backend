@@ -12,3 +12,6 @@ id|slug|state|role|commit|commit_url
 006|deploy-dokploy|ENDED|backend|76cd059|https://github.com/hectorrdez/home-control-backend/commit/76cd059
 008|entity-aliases|ENDED|backend|6014d7c|https://github.com/hectorrdez/home-control-backend/commit/6014d7c
 009|entity-device-names|ENDED|backend|fce132b|https://github.com/hectorrdez/home-control-backend/commit/fce132b
+010|cover-calibration|PENDING|backend
+011|cover-move-percent|PENDING|backend
+012|alert-rules|PENDING|backend
