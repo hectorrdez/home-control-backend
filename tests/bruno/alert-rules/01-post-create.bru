@@ -1,0 +1,35 @@
+meta {
+  name: Alert rules: POST creates connects rule
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/alert-rules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.bruno_alert_test","trigger":{"type":"connects"},"level":"high"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the created rule with a server id", function() {
+    const r = res.body.data[0];
+    expect(res.body.data).to.be.an("array").with.length(1);
+    expect(r.id).to.be.a("string").and.not.empty;
+    expect(r.entityId).to.equal("light.bruno_alert_test");
+    expect(r.trigger).to.deep.equal({ type: "connects" });
+    expect(r.level).to.equal("high");
+    bru.setVar("alertRuleId", r.id);
+  });
+}

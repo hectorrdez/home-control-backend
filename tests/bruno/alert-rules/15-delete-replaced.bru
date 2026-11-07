@@ -1,0 +1,25 @@
+meta {
+  name: Alert rules: DELETE removes the replaced rule
+  type: http
+  seq: 15
+}
+
+delete {
+  url: {{baseUrl}}/api/alert-rules/{{alertRuleId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns an empty array", function() {
+    expect(res.body.data).to.be.an("array").that.is.empty;
+  });
+}

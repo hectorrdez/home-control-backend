@@ -1,0 +1,33 @@
+meta {
+  name: Alert rules: PUT replaces the rule
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/alert-rules/{{alertRuleId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.bruno_alert_test","trigger":{"type":"state_becomes","value":"on"},"level":"medium","message":"Turned on"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("keeps the id and stores the new trigger", function() {
+    const r = res.body.data[0];
+    expect(r.id).to.equal(bru.getVar("alertRuleId"));
+    expect(r.trigger).to.deep.equal({ type: "state_becomes", value: "on" });
+    expect(r.level).to.equal("medium");
+    expect(r.message).to.equal("Turned on");
+  });
+}

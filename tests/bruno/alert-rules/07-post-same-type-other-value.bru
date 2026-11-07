@@ -1,0 +1,30 @@
+meta {
+  name: Alert rules: POST same type with other value is allowed
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/alert-rules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.bruno_alert_test","trigger":{"type":"above","value":25},"level":"medium"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("creates a second above rule with a different value", function() {
+    expect(res.body.data[0].trigger).to.deep.equal({ type: "above", value: 25 });
+    bru.setVar("alertRuleAbove25Id", res.body.data[0].id);
+  });
+}

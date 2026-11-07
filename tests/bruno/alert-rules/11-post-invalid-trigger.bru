@@ -1,0 +1,29 @@
+meta {
+  name: Alert rules: POST unknown trigger type
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/alert-rules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.bruno_alert_test","trigger":{"type":"bogus"},"level":"low"}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_rule error", function() {
+    expect(res.body.error).to.equal("invalid_rule");
+  });
+}

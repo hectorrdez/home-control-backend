@@ -1,0 +1,25 @@
+meta {
+  name: Alert rules: GET after cleanup is empty
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/api/alert-rules?entityId=light.bruno_alert_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the test entity has no rules left", function() {
+    expect(res.body.data).to.be.an("array").that.is.empty;
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Alert rules: GET filters by entity
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/alert-rules?entityId=light.bruno_alert_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("lists only the test entity rules", function() {
+    const ids = res.body.data.map((r) => r.id);
+    expect(ids).to.include(bru.getVar("alertRuleId"));
+    expect(ids).to.include(bru.getVar("alertRuleAboveId"));
+    expect(res.body.data.every((r) => r.entityId === "light.bruno_alert_test")).to.equal(true);
+  });
+}

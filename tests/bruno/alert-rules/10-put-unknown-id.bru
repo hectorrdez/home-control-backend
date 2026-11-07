@@ -1,0 +1,29 @@
+meta {
+  name: Alert rules: PUT unknown id
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/alert-rules/00000000-0000-4000-8000-000000000000
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.bruno_alert_test","trigger":{"type":"disconnects"},"level":"low"}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("typed rule_not_found error", function() {
+    expect(res.body.error).to.equal("rule_not_found");
+  });
+}

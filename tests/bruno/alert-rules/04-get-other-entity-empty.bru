@@ -1,0 +1,25 @@
+meta {
+  name: Alert rules: GET other entity is empty
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/alert-rules?entityId=light.bruno_alert_other
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns an empty array for an entity without rules", function() {
+    expect(res.body.data).to.be.an("array").that.is.empty;
+  });
+}
