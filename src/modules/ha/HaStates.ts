@@ -1,5 +1,6 @@
 import Logger from "@utils/Logger";
 import { haGet, haPostText } from "./HaClient";
+import coverMoves from "@modules/covers/CoverMoves";
 
 /** Raw Home Assistant state object (only the fields we read). */
 export interface HaState {
@@ -158,6 +159,7 @@ export function normalizeEntity(
   for (const key of SAFE_ATTRIBUTES) {
     if (s.attributes && key in s.attributes) attrs[key] = s.attributes[key];
   }
+  if (domain === "cover") attrs.estimated_position = coverMoves.estimatedPosition(s.entity_id);
   const area = areas.get(s.entity_id) ?? null;
   const friendly = typeof s.attributes?.friendly_name === "string" ? s.attributes.friendly_name : "";
   return {
@@ -171,6 +173,12 @@ export function normalizeEntity(
     deviceName: deviceNames?.get(s.entity_id) ?? null,
     lastChanged: s.last_changed,
   };
+}
+
+/** Normalizes one fresh state with the area and device indexes (cached). */
+export async function normalizeLive(state: HaState): Promise<NormalizedEntity> {
+  const [areas, devices] = await Promise.all([fetchAreaIndex(), fetchDeviceNameIndex()]);
+  return normalizeEntity(state, areas, devices);
 }
 
 /** Single state lookup helper for control/action responses. */

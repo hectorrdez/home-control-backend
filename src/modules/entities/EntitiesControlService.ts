@@ -1,11 +1,6 @@
 import { haPostText } from "@modules/ha/HaClient";
-import {
-  fetchAreaIndex,
-  fetchDeviceNameIndex,
-  fetchState,
-  normalizeEntity,
-  NormalizedEntity,
-} from "@modules/ha/HaStates";
+import { fetchState, normalizeLive, NormalizedEntity } from "@modules/ha/HaStates";
+import coverMoves from "@modules/covers/CoverMoves";
 import {
   DomainNotAllowedError,
   EntityNotFoundError,
@@ -109,9 +104,9 @@ export async function controlEntity(
   if (!existing) throw new EntityNotFoundError();
 
   // HA replies with the list of states that changed; we re-read ours from it.
-  await haPostText(`/api/services/${domain}/${action}`, { entity_id: entityId, ...params });
+  const send = () => haPostText(`/api/services/${domain}/${action}`, { entity_id: entityId, ...params });
+  if (domain === "cover") await coverMoves.onAction(entityId, action, send);
+  else await send();
 
-  const fresh = (await fetchState(entityId)) ?? existing;
-  const [areas, devices] = await Promise.all([fetchAreaIndex(), fetchDeviceNameIndex()]);
-  return normalizeEntity(fresh, areas, devices);
+  return normalizeLive((await fetchState(entityId)) ?? existing);
 }

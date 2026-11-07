@@ -1,0 +1,29 @@
+meta {
+  name: Cover percent: calibrate a cover unknown to HA
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/calibrations/cover.bruno_missing_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"openMs":15000,"closeMs":14000}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("stored with position unknown", function() {
+    expect(res.body.data[0].position).to.equal(null);
+  });
+}

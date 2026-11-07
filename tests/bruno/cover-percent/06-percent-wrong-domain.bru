@@ -1,0 +1,29 @@
+meta {
+  name: Cover percent: non-cover domain
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/entities/light.bruno_calibration_test/cover-percent
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"percent":50}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("typed domain_not_allowed error", function() {
+    expect(res.body.error).to.equal("domain_not_allowed");
+  });
+}

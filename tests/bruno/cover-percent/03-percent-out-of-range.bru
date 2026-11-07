@@ -1,0 +1,29 @@
+meta {
+  name: Cover percent: percent out of range
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/entities/cover.bruno_calibration_test/cover-percent
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"percent":101}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_params error", function() {
+    expect(res.body.error).to.equal("invalid_params");
+  });
+}

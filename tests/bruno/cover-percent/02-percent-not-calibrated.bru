@@ -1,0 +1,29 @@
+meta {
+  name: Cover percent: not calibrated
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/entities/cover.bruno_calibration_test/cover-percent
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"percent":50}
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("typed not_calibrated error", function() {
+    expect(res.body.error).to.equal("not_calibrated");
+  });
+}
