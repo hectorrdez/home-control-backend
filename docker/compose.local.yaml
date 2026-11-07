@@ -1,0 +1,8 @@
+# Local override for Docker Desktop: publishes the db on the host loopback so
+# `npm run dev` (on the host) can reach it. Nothing else is published here.
+# Full stack:  docker compose -f docker/compose.yaml -f docker/compose.local.yaml --env-file .env up -d --build
+# Db only:     same command with `db` at the end, and PGHOST=localhost in .env.
+services:
+  db:
+    ports:
+      - "127.0.0.1:${PG_PUBLISH_PORT:-5432}:5432"

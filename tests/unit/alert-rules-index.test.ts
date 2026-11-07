@@ -23,10 +23,15 @@ async function bootIndex() {
   vi.doMock("../../src/app", () => ({ default: { listen } }));
   vi.doMock("@utils/Logger", () => ({ default: { init: vi.fn(), write: vi.fn(), error: vi.fn() } }));
   vi.doMock("@modules/ha/HaClient", () => ({ warnIfHaMisconfigured: vi.fn() }));
+  vi.doMock("../../src/db/pool", () => ({ pool: {} }));
+  vi.doMock("../../src/db/connect", () => ({ connectDb: vi.fn(async () => undefined) }));
+  vi.doMock("../../src/db/migrate", () => ({ migrate: vi.fn(async () => undefined) }));
+  vi.doMock("../../src/db/health", () => ({ startDbPing: vi.fn() }));
   vi.doMock("@modules/aliases/AliasStore", () => ({ default: { load: vi.fn() } }));
   vi.doMock("@modules/calibrations/CalibrationStore", () => ({ default: { load: vi.fn() } }));
   vi.doMock("@modules/alert-rules/AlertRuleStore", () => ({ default: { load } }));
   await import("../../src/index");
+  await vi.waitFor(() => expect(listen).toHaveBeenCalled());
 }
 
 describe("src/index.ts alert rules wiring", () => {

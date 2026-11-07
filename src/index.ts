@@ -5,6 +5,10 @@ import { warnIfHaMisconfigured } from "@modules/ha/HaClient";
 import aliasStore from "@modules/aliases/AliasStore";
 import calibrationStore from "@modules/calibrations/CalibrationStore";
 import alertRuleStore from "@modules/alert-rules/AlertRuleStore";
+import { pool } from "./db/pool";
+import { connectDb } from "./db/connect";
+import { migrate } from "./db/migrate";
+import { startDbPing } from "./db/health";
 
 const port = Number(process.env.API_PORT ?? 3002);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -12,7 +16,20 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 Logger.init();
 warnIfHaMisconfigured();
-aliasStore.load(process.env.ALIASES_FILE || "/data/aliases.json");
-calibrationStore.load(process.env.CALIBRATIONS_FILE || "/data/calibrations.json");
-alertRuleStore.load(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
-app.listen(port, () => Logger.write(`API listening on port ${port}`));
+
+// Database first: the stores and the listener only start once the schema is ready.
+// Any failure exits so compose restarts the container.
+async function bootstrap(): Promise<void> {
+  await connectDb(pool);
+  await migrate(pool);
+  startDbPing(pool);
+  aliasStore.load(process.env.ALIASES_FILE || "/data/aliases.json");
+  calibrationStore.load(process.env.CALIBRATIONS_FILE || "/data/calibrations.json");
+  alertRuleStore.load(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
+  app.listen(port, () => Logger.write(`API listening on port ${port}`));
+}
+
+bootstrap().catch((err: Error) => {
+  Logger.error(`startup failed: ${err.message}`);
+  process.exit(1);
+});

@@ -11,7 +11,8 @@
       "@utils/*": ["src/resources/utils/*"],
       "@views/*": ["src/resources/views/*"],
       "@shared/*": ["src/shared/*"],
-      "@modules/*": ["src/modules/*"]
+      "@modules/*": ["src/modules/*"],
+      "@db/*": ["src/db/*"]
     },
     "strict": true,
     "esModuleInterop": true,

@@ -1,7 +1,7 @@
 # Home Control API
 
 Express + TypeScript API in front of Home Assistant (list/control entities,
-areas, SSE stream, history). No database. Node.js 22+ and npm.
+areas, SSE stream, history). PostgreSQL 17 (compose service `db`) for persistence. Node.js 22+ and npm.
 
 ```sh
 npm install
@@ -21,7 +21,17 @@ no auth). Contract: `.claude/endpoints.md`.
 - `src/modules/<name>/`: `health`, `ha`, `entities`, `areas`, `stream`, `history`, `aliases`, `calibrations`, `alert-rules`.
 - `src/shared/`: `route()` wrapper, guards, error middleware.
 - `src/resources/`: controller/view templates, typed `errors/`, `utils/`.
-- `docker/`: `Dockerfile` (multi-stage, Node 22, `npm ci`) and `compose.yaml`.
+- `src/db/`: `pool.ts` (shared `pg` pool, `withTransaction`), `connect.ts` (startup retry), `migrate.ts` + `migrations/` (TypeScript files exporting SQL), `health.ts` (db liveness flag).
+- `docker/`: `Dockerfile` (multi-stage, Node 22, `npm ci`), `compose.yaml` (api + db) and `compose.local.yaml` (Docker Desktop override).
+
+## Stack (api + db)
+
+`compose.yaml` runs `api` and `db` (`postgres:17-alpine`, no published port). The api waits for the db healthcheck, then connects with the standard `PG*` env vars (`PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`; compose maps them from `POSTGRES_*`). Migrations run at startup before the listener opens; a failed migration or an unreachable db exits the process and compose restarts it.
+
+- Full stack on Docker Desktop: `docker compose -f docker/compose.yaml -f docker/compose.local.yaml --env-file .env up -d --build`
+- Db only for `npm run dev`: the same command with `db` at the end, and `PGHOST=localhost` in `.env`. The db is published on `127.0.0.1:${PG_PUBLISH_PORT:-5432}`.
+- `POSTGRES_PASSWORD` lives only in the gitignored `.env` and in Dokploy env. Never commit it.
+- `/api/health` returns `db: "up" | "down"`; it stays 200 when the db is down.
 
 ## Response envelope
 

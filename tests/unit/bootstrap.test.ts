@@ -10,6 +10,15 @@ const load = vi.fn();
 vi.mock("../../src/app", () => ({ default: { listen } }));
 vi.mock("@modules/aliases/AliasStore", () => ({ default: { load } }));
 
+// The database is stubbed: bootstrap must connect and migrate before it loads stores and listens.
+const connectDb = vi.fn(async () => undefined);
+const migrate = vi.fn(async () => undefined);
+const startDbPing = vi.fn();
+vi.mock("../../src/db/pool", () => ({ pool: {} }));
+vi.mock("../../src/db/connect", () => ({ connectDb }));
+vi.mock("../../src/db/migrate", () => ({ migrate }));
+vi.mock("../../src/db/health", () => ({ startDbPing }));
+
 async function boot(port: string | undefined) {
   if (port === undefined) delete process.env.API_PORT;
   else process.env.API_PORT = port;
@@ -20,6 +29,9 @@ async function boot(port: string | undefined) {
 beforeEach(() => {
   listen.mockClear();
   load.mockClear();
+  connectDb.mockClear();
+  migrate.mockClear();
+  startDbPing.mockClear();
   delete process.env.ALIASES_FILE;
 });
 
@@ -32,13 +44,36 @@ describe("bootstrap (src/index.ts)", () => {
     silenceConsole();
     process.env.ALIASES_FILE = "/tmp/custom-aliases.json";
     await boot("4123");
-    expect(listen).toHaveBeenCalledWith(4123, expect.any(Function));
+    await vi.waitFor(() => expect(listen).toHaveBeenCalledWith(4123, expect.any(Function)));
     expect(load).toHaveBeenCalledWith("/tmp/custom-aliases.json");
+  });
+
+  it("connects and migrates before loading stores and listening", async () => {
+    silenceConsole();
+    await boot("4124");
+    await vi.waitFor(() => expect(listen).toHaveBeenCalled());
+    expect(connectDb).toHaveBeenCalledTimes(1);
+    expect(migrate).toHaveBeenCalledTimes(1);
+    expect(startDbPing).toHaveBeenCalledTimes(1);
+    expect(connectDb.mock.invocationCallOrder[0]).toBeLessThan(migrate.mock.invocationCallOrder[0]);
+    expect(migrate.mock.invocationCallOrder[0]).toBeLessThan(load.mock.invocationCallOrder[0]);
+    expect(load.mock.invocationCallOrder[0]).toBeLessThan(listen.mock.invocationCallOrder[0]);
+  });
+
+  it("exits with code 1 and never listens when the database is unreachable", async () => {
+    silenceConsole();
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    connectDb.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+    await boot("4125");
+    await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(1));
+    expect(listen).not.toHaveBeenCalled();
+    exit.mockRestore();
   });
 
   it("defaults to port 3002 and the /data aliases file", async () => {
     silenceConsole();
     await boot(undefined);
+    await vi.waitFor(() => expect(listen).toHaveBeenCalled());
     expect(listen.mock.calls[0][0]).toBe(3002);
     expect(load).toHaveBeenCalledWith("/data/aliases.json");
   });

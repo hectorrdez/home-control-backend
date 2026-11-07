@@ -1,12 +1,15 @@
-# Single service, no database. All config from the environment (Dokploy env or
+# API + PostgreSQL stack. All config from the environment (Dokploy env or
 # a local .env via `--env-file`). Dokploy: compose source = Git, composePath =
-# docker/compose.yaml. The container always listens on 3002.
+# docker/compose.yaml. The container always listens on 3002; only the api is published.
 services:
   api:
     build:
       context: ..
       dockerfile: docker/Dockerfile
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "${PUBLISH_PORT:-3002}:3002"
     environment:
@@ -16,11 +19,38 @@ services:
       HA_TOKEN: ${HA_TOKEN:?Set HA_TOKEN}
       API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
-      ALIASES_FILE: ${ALIASES_FILE:-/data/aliases.json}
-      CALIBRATIONS_FILE: ${CALIBRATIONS_FILE:-/data/calibrations.json}
-      ALERT_RULES_FILE: ${ALERT_RULES_FILE:-/data/alert-rules.json}
+      ALIASES_FILE: /data/aliases.json
+      CALIBRATIONS_FILE: /data/calibrations.json
+      ALERT_RULES_FILE: /data/alert-rules.json
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-homecontrol}
+      PGUSER: ${POSTGRES_USER:-homecontrol}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      DB_POOL_MAX: ${DB_POOL_MAX:-5}
     volumes:
       - aliases-data:/data
 
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    # No published port: only the api reaches it on the compose network.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-homecontrol}
+      POSTGRES_USER: ${POSTGRES_USER:-homecontrol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    command: ["postgres", "-c", "shared_buffers=32MB", "-c", "max_connections=20", "-c", "work_mem=4MB"]
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
 volumes:
   aliases-data:
+    name: ${DATA_VOLUME_NAME:-home-control-data}
+  pg-data:
+    name: ${PG_VOLUME_NAME:-home-control-pg}
