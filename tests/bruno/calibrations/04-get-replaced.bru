@@ -1,0 +1,28 @@
+meta {
+  name: Calibrations: GET shows replaced values
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/calibrations
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one entry with the new durations", function() {
+    const hits = res.body.data.filter((c) => c.entityId === "cover.bruno_calibration_test");
+    expect(hits).to.have.length(1);
+    expect(hits[0].openMs).to.equal(16000);
+    expect(hits[0].closeMs).to.equal(15500);
+  });
+}

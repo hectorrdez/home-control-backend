@@ -1,0 +1,26 @@
+meta {
+  name: Calibrations: GET no longer contains it
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/calibrations
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("calibration is gone", function() {
+    const hit = res.body.data.find((c) => c.entityId === "cover.bruno_calibration_test");
+    expect(hit).to.be.undefined;
+  });
+}

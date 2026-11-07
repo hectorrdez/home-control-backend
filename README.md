@@ -18,7 +18,7 @@ no auth). Contract: `.claude/endpoints.md`.
 
 - `src/index.ts`, `src/app.ts`: bootstrap, CORS, API key gate, error handling.
 - `src/routes.ts`: aggregator mounted under `/api`.
-- `src/modules/<name>/`: `health`, `ha`, `entities`, `areas`, `stream`, `history`, `aliases`.
+- `src/modules/<name>/`: `health`, `ha`, `entities`, `areas`, `stream`, `history`, `aliases`, `calibrations`.
 - `src/shared/`: `route()` wrapper, guards, error middleware.
 - `src/resources/`: controller/view templates, typed `errors/`, `utils/`.
 - `docker/`: `Dockerfile` (multi-stage, Node 22, `npm ci`) and `compose.yaml`.
@@ -40,6 +40,7 @@ stable snake_case code, never a stack.
 | `CORS_ORIGINS` | Comma-separated allowlist, e.g. `https://home-control.hectorrdez.es,http://localhost:5173`. |
 | `LOG_TO_FILE` | `true` also writes CSV logs under `data/`. |
 | `ALIASES_FILE` | JSON file for user entity aliases. Default `/data/aliases.json` (container); local dev `./data/aliases.json`. Must be writable. |
+| `CALIBRATIONS_FILE` | JSON file for cover open/close calibrations. Default `/data/calibrations.json` (container); local dev `./data/calibrations.json`. Same `/data` volume as aliases. |
 
 ## Deploy (Dokploy, homelab)
 
@@ -49,11 +50,12 @@ port (3041). Set the env vars above in Dokploy. The image has a healthcheck on
 `/api/health`. Alternative: compose source with `docker/compose.yaml`
 (`PUBLISH_PORT` sets the host port).
 
-**Aliases volume:** the API stores user entity aliases in one JSON file
-(`ALIASES_FILE`, default `/data/aliases.json`). In Dokploy (Dockerfile build
+**Data volume:** the API stores user entity aliases (`ALIASES_FILE`, default
+`/data/aliases.json`) and cover calibrations (`CALIBRATIONS_FILE`, default
+`/data/calibrations.json`) as small JSON files in `/data`. In Dokploy (Dockerfile build
 type) add a volume mount for `/data`, e.g. named volume `home-control-aliases`,
-or aliases are lost on redeploy. Backup = copy that one file. The compose file
-already declares the `aliases-data` volume.
+or aliases and calibrations are lost on redeploy. Backup = copy those files. The compose file
+already declares the `aliases-data` volume (it covers both files).
 
 ### Caddy
 

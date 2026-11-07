@@ -6,6 +6,7 @@ import areasRoutes from "@modules/areas/areas.routes";
 import streamRoutes from "@modules/stream/stream.routes";
 import historyRoutes from "@modules/history/history.routes";
 import aliasesRoutes from "@modules/aliases/aliases.routes";
+import calibrationsRoutes from "@modules/calibrations/calibrations.routes";
 // <modules:import>
 
 /**
@@ -22,4 +23,5 @@ router.use(areasRoutes);
 router.use(streamRoutes);
 router.use(historyRoutes);
 router.use(aliasesRoutes);
+router.use(calibrationsRoutes);
 // <modules:use>

@@ -17,6 +17,7 @@ services:
       API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       ALIASES_FILE: ${ALIASES_FILE:-/data/aliases.json}
+      CALIBRATIONS_FILE: ${CALIBRATIONS_FILE:-/data/calibrations.json}
     volumes:
       - aliases-data:/data
 

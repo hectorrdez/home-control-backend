@@ -1,0 +1,28 @@
+meta {
+  name: Calibrations: GET lists the entry
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/calibrations
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("contains the created calibration", function() {
+    const hit = res.body.data.find((c) => c.entityId === "cover.bruno_calibration_test");
+    expect(hit).to.exist;
+    expect(hit.openMs).to.equal(15000);
+    expect(hit.closeMs).to.equal(14000);
+  });
+}

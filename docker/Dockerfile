@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-# Aliases file store (ALIASES_FILE, default /data/aliases.json). A named volume
+# File stores: aliases (ALIASES_FILE) and calibrations (CALIBRATIONS_FILE), both under /data. A named volume
 # mounted here inherits node ownership, so the non-root user can write it.
 RUN mkdir -p /data && chown node:node /data
 USER node

@@ -1,0 +1,35 @@
+meta {
+  name: Calibrations: PUT creates
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/calibrations/cover.bruno_calibration_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"openMs":15000,"closeMs":14000}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the stored entry with position unknown", function() {
+    expect(res.body.data).to.be.an("array").with.length(1);
+    const e = res.body.data[0];
+    expect(e.entityId).to.equal("cover.bruno_calibration_test");
+    expect(e.openMs).to.equal(15000);
+    expect(e.closeMs).to.equal(14000);
+    expect(e.position).to.equal(null);
+    expect(e.calibratedAt).to.be.a("string");
+  });
+}

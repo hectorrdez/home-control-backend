@@ -1,0 +1,29 @@
+meta {
+  name: Calibrations: openMs below 500
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/calibrations/cover.bruno_calibration_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"openMs":100,"closeMs":14000}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_calibration error", function() {
+    expect(res.body.error).to.equal("invalid_calibration");
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Calibrations: non-cover domain
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/calibrations/light.bruno_calibration_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"openMs":15000,"closeMs":14000}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("typed domain_not_allowed error", function() {
+    expect(res.body.error).to.equal("domain_not_allowed");
+  });
+}
