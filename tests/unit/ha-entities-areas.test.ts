@@ -22,6 +22,7 @@ async function load() {
     controlEntity: control.controlEntity,
     DomainNotAllowedError: errors.DomainNotAllowedError,
     EntityNotFoundError: errors.EntityNotFoundError,
+    InvalidActionError: errors.InvalidActionError,
     InvalidEntityIdError: errors.InvalidEntityIdError,
     HaUnauthorizedError: haErrors.HaUnauthorizedError,
   };
@@ -199,9 +200,38 @@ describe("controlEntity", () => {
     const m = await load();
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const err = await m.controlEntity("lock.front", body({ action: "toggle" })).catch((e) => e);
+    const err = await m.controlEntity("sensor.front", body({ action: "turn_on" })).catch((e) => e);
     expect(err).toBeInstanceOf(m.DomainNotAllowedError);
     expect(err.getCode()).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("calls the lock service for a lock entity", async () => {
+    const m = await load();
+    const lockStates = [{ ...STATES[0], entity_id: "lock.front", state: "locked" }];
+    let reads = 0;
+    const fetchMock = haRouter({
+      "/api/services/lock/unlock": () => [],
+      "/api/states": () => {
+        reads++;
+        return reads === 1 ? lockStates : [{ ...lockStates[0], state: "unlocked" }];
+      },
+      "/api/template": templateReply(INDEX_TEXT),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const out = await m.controlEntity("lock.front", body({ action: "unlock" }));
+    expect(out).toMatchObject({ entityId: "lock.front", state: "unlocked" });
+    const serviceCall = fetchMock.mock.calls.find((c) => String(c[0]).includes("/api/services/"));
+    expect(JSON.parse(String(serviceCall![1]?.body))).toEqual({ entity_id: "lock.front" });
+  });
+
+  it("rejects an action that the entity's domain does not support with 400", async () => {
+    const m = await load();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const err = await m.controlEntity("lock.front", body({ action: "toggle" })).catch((e) => e);
+    expect(err).toBeInstanceOf(m.InvalidActionError);
+    expect(err.getCode()).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

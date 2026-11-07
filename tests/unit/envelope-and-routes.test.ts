@@ -7,7 +7,7 @@ import Controller from "@templates/Controller";
 import RouteNotDeclaredError from "@errors/RouteNotDeclaredError";
 import { route, sendOk, HANDLED } from "@shared/http/route";
 import errorHandler from "@shared/middlewares/ErrorMiddleware";
-import { parseAction, ALLOWED_DOMAINS } from "@modules/entities/EntitiesControlService";
+import { parseAction, ALLOWED_DOMAINS, ALLOWED_ACTIONS } from "@modules/entities/EntitiesControlService";
 import { InvalidActionError, InvalidParamsError } from "@modules/entities/EntityErrors";
 import { silenceConsole, fakeRes, startApp } from "./helpers";
 
@@ -304,8 +304,32 @@ describe("entity control validation (parseAction)", () => {
     expect(() => parseAction({ action: "turn_on", params: { brightness: true } as any })).toThrow(InvalidParamsError);
   });
 
+  it("accepts brightness_pct and preset_mode params", () => {
+    expect(parseAction({ action: "turn_on", params: { brightness_pct: 50 } }, "light").params).toEqual({
+      brightness_pct: 50,
+    });
+    expect(parseAction({ action: "set_preset_mode", params: { preset_mode: "eco" } }, "climate").params).toEqual({
+      preset_mode: "eco",
+    });
+  });
+
+  it("enforces per-domain actions when a domain is given", () => {
+    expect(parseAction({ action: "open_cover" }, "cover").action).toBe("open_cover");
+    expect(parseAction({ action: "lock" }, "lock").action).toBe("lock");
+    expect(parseAction({ action: "set_temperature", params: { temperature: 21 } }, "climate").action).toBe(
+      "set_temperature"
+    );
+    expect(() => parseAction({ action: "open_cover" }, "light")).toThrow(InvalidActionError);
+    expect(() => parseAction({ action: "turn_on" }, "lock")).toThrow(InvalidActionError);
+    expect(() => parseAction({ action: "lock" }, "switch")).toThrow(InvalidActionError);
+    expect(() => parseAction({ action: "set_temperature" }, "cover")).toThrow(InvalidActionError);
+    expect(() => parseAction({ action: "toggle" }, "lock")).toThrow(InvalidActionError);
+  });
+
   it("exposes the domain allowlist the panel may control", () => {
     expect(ALLOWED_DOMAINS).toContain("light");
-    expect(ALLOWED_DOMAINS).not.toContain("lock");
+    expect(ALLOWED_DOMAINS).toContain("lock");
+    expect(ALLOWED_DOMAINS).not.toContain("sensor");
+    expect(ALLOWED_ACTIONS).toEqual(expect.arrayContaining(["open_cover", "set_preset_mode", "lock", "unlock"]));
   });
 });

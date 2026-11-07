@@ -14,21 +14,45 @@ import {
   InvalidParamsError,
 } from "./EntityErrors";
 
-/** Domains the panel may control (notes.md allowlist). */
-export const ALLOWED_DOMAINS = ["light", "switch", "climate", "cover", "fan", "media_player", "scene", "script"];
+/**
+ * Per-domain action allowlist. Each action maps 1:1 to the HA service of the same name
+ * in the entity's domain. A domain's key here is also the domain allowlist.
+ */
+const CONTROL_ACTIONS = {
+  light: ["turn_on", "turn_off", "toggle"],
+  switch: ["turn_on", "turn_off", "toggle"],
+  fan: ["turn_on", "turn_off", "toggle"],
+  scene: ["turn_on", "turn_off", "toggle"],
+  script: ["turn_on", "turn_off", "toggle"],
+  media_player: ["turn_on", "turn_off", "toggle"],
+  cover: ["open_cover", "close_cover", "stop_cover", "set_cover_position", "toggle"],
+  climate: ["turn_on", "turn_off", "set_temperature", "set_hvac_mode", "set_preset_mode"],
+  lock: ["lock", "unlock"],
+} as const satisfies Record<string, readonly string[]>;
 
-/** Actions mapped 1:1 to the HA service of the same name in the entity's domain. */
-export const ALLOWED_ACTIONS = ["turn_on", "turn_off", "toggle"] as const;
-export type EntityAction = (typeof ALLOWED_ACTIONS)[number];
+/** Domains the panel may control (notes.md allowlist). */
+export const ALLOWED_DOMAINS: string[] = Object.keys(CONTROL_ACTIONS);
+
+/** Actions allowed per domain (lookup by domain string). */
+export const ACTIONS_BY_DOMAIN: Readonly<Record<string, readonly string[]>> = CONTROL_ACTIONS;
+
+export type EntityAction = (typeof CONTROL_ACTIONS)[keyof typeof CONTROL_ACTIONS][number];
+
+/** Union of every action across all domains. */
+export const ALLOWED_ACTIONS: readonly EntityAction[] = [
+  ...new Set(Object.values(CONTROL_ACTIONS).flat()),
+] as EntityAction[];
 
 /** Service data keys a client may pass; anything else is rejected. */
 const ALLOWED_PARAMS = [
   "brightness",
+  "brightness_pct",
   "color_temp",
   "temperature",
   "position",
   "percentage",
   "hvac_mode",
+  "preset_mode",
   "volume_level",
 ] as const;
 
@@ -39,11 +63,19 @@ export interface ActionBody {
   params?: unknown;
 }
 
-/** Validates the body and returns a clean action + service data. Throws typed ApiErrors. */
-export function parseAction(body: ActionBody | undefined): { action: EntityAction; params: Record<string, unknown> } {
+/**
+ * Validates the body and returns a clean action + service data. Throws typed ApiErrors.
+ * When `domain` is given, the action must be allowed for that domain; otherwise it is
+ * checked against the union of all domains.
+ */
+export function parseAction(
+  body: ActionBody | undefined,
+  domain?: string
+): { action: EntityAction; params: Record<string, unknown> } {
   const action = body?.action;
-  if (typeof action !== "string" || !(ALLOWED_ACTIONS as readonly string[]).includes(action)) {
-    throw new InvalidActionError(`action must be one of: ${ALLOWED_ACTIONS.join(", ")}`);
+  const allowed: readonly string[] = domain === undefined ? ALLOWED_ACTIONS : (ACTIONS_BY_DOMAIN[domain] ?? []);
+  if (typeof action !== "string" || !allowed.includes(action)) {
+    throw new InvalidActionError(`action must be one of: ${allowed.join(", ")}`);
   }
   const raw = body?.params ?? {};
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -71,7 +103,7 @@ export async function controlEntity(
   const domain = entityId.split(".")[0];
   if (!ALLOWED_DOMAINS.includes(domain)) throw new DomainNotAllowedError(`domain not allowed: ${domain}`);
 
-  const { action, params } = parseAction(body);
+  const { action, params } = parseAction(body, domain);
 
   const existing = await fetchState(entityId);
   if (!existing) throw new EntityNotFoundError();

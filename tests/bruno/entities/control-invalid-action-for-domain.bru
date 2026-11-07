@@ -1,0 +1,23 @@
+meta {
+  name: Control: action not valid for domain
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/entities/switch.interruptor_bano_interruptor_2/action
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"action":"open_cover"}
+}
+
+assert {
+  res.status: eq 400
+}
