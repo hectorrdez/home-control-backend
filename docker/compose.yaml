@@ -7,6 +7,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     restart: unless-stopped
+    mem_limit: 256m
     depends_on:
       db:
         condition: service_healthy
@@ -34,6 +35,7 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    mem_limit: 256m
     # No published port: only the api reaches it on the compose network.
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-homecontrol}
@@ -42,6 +44,8 @@ services:
     command: ["postgres", "-c", "shared_buffers=32MB", "-c", "max_connections=20", "-c", "work_mem=4MB"]
     volumes:
       - pg-data:/var/lib/postgresql/data
+      # Read-only view of the backups, for the restore runbook (README).
+      - pg-backups:/backups:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -49,8 +53,61 @@ services:
       retries: 6
       start_period: 20s
 
+  # Nightly pg_dump (custom format) into the pg-backups volume. Same image as db,
+  # so no extra pull. Runs once on start, then every BACKUP_INTERVAL_SECONDS (default 24 h).
+  # Keeps the newest BACKUP_KEEP dumps and deletes the rest.
+  db-backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-homecontrol}
+      PGUSER: ${POSTGRES_USER:-homecontrol}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - pg-backups:/backups
+    entrypoint:
+      - sh
+      - -c
+      - |
+        # Positive integer check: digits only, then strip leading zeros (so "00"
+        # becomes empty = 0 = rejected). Sets v to the normalized value.
+        posint() {
+          case "$$1" in ''|*[!0-9]*) return 1 ;; esac
+          v="$${1#"$${1%%[!0]*}"}"
+          [ -n "$$v" ]
+        }
+        if posint "$$BACKUP_KEEP"; then keep="$$v"
+        else echo "invalid BACKUP_KEEP='$$BACKUP_KEEP', using 7"; keep=7; fi
+        if posint "$$BACKUP_INTERVAL_SECONDS"; then interval="$$v"
+        else echo "invalid BACKUP_INTERVAL_SECONDS='$$BACKUP_INTERVAL_SECONDS', using 86400"; interval=86400; fi
+        while true; do
+          # Leftovers of an interrupted run (never match the retention glob).
+          rm -f /backups/.tmp-homecontrol-*
+          name="homecontrol-$$(date +%Y%m%d-%H%M%S)-$$(cut -c1-8 /proc/sys/kernel/random/uuid).dump"
+          tmp="/backups/.tmp-$$name"
+          if pg_dump -Fc -f "$$tmp" && [ -s "$$tmp" ] && mv "$$tmp" "/backups/$$name"; then
+            echo "backup ok: /backups/$$name"
+            # Names start with a sortable timestamp: newest = highest name.
+            ls -1 /backups/homecontrol-*.dump | sort -r | tail -n +$$((keep + 1)) | xargs -r rm -f
+          else
+            echo "backup FAILED (existing backups kept)"
+            rm -f "$$tmp"
+          fi
+          sleep "$$interval"
+        done
+
 volumes:
   aliases-data:
     name: ${DATA_VOLUME_NAME:-home-control-data}
   pg-data:
     name: ${PG_VOLUME_NAME:-home-control-pg}
+  pg-backups:
+    name: ${BACKUP_VOLUME_NAME:-home-control-pg-backups}

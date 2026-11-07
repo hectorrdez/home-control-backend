@@ -55,7 +55,9 @@ stable snake_case code, never a stack.
 
 ## Deploy (Dokploy, homelab)
 
-Application from GitHub `hectorrdez/home-control-backend`, branch `dev`, build
+**Primary method: Dokploy Compose stack, see "Deploy (Dokploy compose)" and its
+cutover runbook below.** The single-application method described in this paragraph
+is **legacy / rollback only**: Application from GitHub `hectorrdez/home-control-backend`, branch `dev`, build
 type Dockerfile (`docker/Dockerfile`), container port 3002 published on a host
 port (3041). Set the env vars above in Dokploy. The image has a healthcheck on
 `/api/health`. Alternative: compose source with `docker/compose.yaml`
@@ -67,6 +69,26 @@ table (see the `db` service in `docker/compose.yaml`). The old JSON files
 are a legacy import source only: at startup each one is imported once into an
 empty collection and renamed to `<file>.imported-<epochMs>`. A failed import is
 logged and the file is kept. Back up the database, not the JSON files.
+
+### Deploy (Dokploy compose)
+
+Runbook for the user. Stack = `api` + `db` + `db-backup` from `docker/compose.yaml`.
+
+1. In Dokploy project HomeControl create a **Compose** service `home-control-stack` (source Git, repo home-control-backend, branch `dev`, compose path `docker/compose.yaml`, type docker-compose).
+2. Env (Dokploy env, never in git): `HA_URL`, `HA_TOKEN`, `API_TOKEN`, `CORS_ORIGINS`, `POSTGRES_PASSWORD` (new, long random), optional `POSTGRES_DB` / `POSTGRES_USER`, `PUBLISH_PORT=3041`, `DATA_VOLUME_NAME=home-control-aliases` (reuses the old volume so the one-time JSON import works), `EVENTS_RETENTION_DAYS=365`. Optional backup knobs: `BACKUP_KEEP` (default 7), `BACKUP_INTERVAL_SECONDS` (default 86400), `BACKUP_VOLUME_NAME` (default `home-control-pg-backups`).
+3. Stop the old `home-control-backend` application (frees port 3041), deploy the compose service, then check that `api` and `db` are healthy: `docker ps --filter name=home-control-stack --format '{{.Names}}	{{.Status}}'` (Dokploy generates the container names from the compose app name; `db` and `db-backup` appear as `...-db-1` / `...-db-backup-1` or similar), `GET /api/health` returns `db: "up"`, and aliases/rules/calibrations are present (look for the import log line). Keep the old application **stopped, not deleted**, for one week as rollback. Rollback = stop the compose service, start the old app (the JSON files were renamed `*.imported-*`: rename them back first).
+4. Caddy and dnsmasq unchanged.
+5. Backups: `db-backup` writes `homecontrol-<timestamp>.dump` (custom format) into the `home-control-pg-backups` volume on start and every 24 h, keeping the newest 7. Restore into the running db (the backups volume is mounted read-only into `db` at `/backups`):
+   ```
+   DB=$(docker ps --filter name=home-control-stack --format '{{.Names}}' | grep -E -- '-db-[0-9]+$|_db[._]' | grep -v backup | head -1)
+   docker exec "$DB" ls -1 /backups
+   docker exec "$DB" pg_restore -U <user> -d <db> --clean --if-exists /backups/<file>.dump
+   ```
+   Adjust the `grep` if `docker ps` shows other names; any container whose name contains the compose app name and `db` (not `db-backup`) works. To test first, restore into a scratch DB: `docker exec "$DB" createdb -U <user> scratch && docker exec "$DB" pg_restore -U <user> -d scratch /backups/<file>.dump`.
+
+Local Docker Desktop: same compose file plus `docker/compose.local.yaml`, with `POSTGRES_PASSWORD` in `.env`:
+`docker compose -f docker/compose.yaml -f docker/compose.local.yaml --env-file .env up -d --build`.
+`docker compose ... down` keeps data; `down -v` **wipes the database and the backups** (warn before using it).
 
 ### Caddy
 
