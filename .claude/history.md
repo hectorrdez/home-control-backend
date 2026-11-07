@@ -15,3 +15,11 @@ id|slug|state|role|commit|commit_url
 010|cover-calibration|ENDED|backend|6ef042c|https://github.com/hectorrdez/home-control-backend/commit/6ef042c
 011|cover-move-percent|ENDED|backend|1f8479f|https://github.com/hectorrdez/home-control-backend/commit/1f8479f
 012|alert-rules|ENDED|backend|2cd2b34|https://github.com/hectorrdez/home-control-backend/commit/2cd2b34
+013|postgres-foundation|ENDED|backend|917e432|https://github.com/hectorrdez/home-control-backend/commit/917e432
+014|pg-document-store|PENDING|backend
+015|stack-deploy-backup|PENDING|backend
+016|change-bus-sse|PENDING|backend
+017|settings-api|PENDING|backend
+018|event-log|PENDING|backend
+019|ha-recorder|PENDING|backend
+020|server-alerts|PENDING|backend
