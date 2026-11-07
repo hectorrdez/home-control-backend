@@ -13,5 +13,5 @@ id|slug|state|role|commit|commit_url
 008|entity-aliases|ENDED|backend|6014d7c|https://github.com/hectorrdez/home-control-backend/commit/6014d7c
 009|entity-device-names|ENDED|backend|fce132b|https://github.com/hectorrdez/home-control-backend/commit/fce132b
 010|cover-calibration|ENDED|backend|6ef042c|https://github.com/hectorrdez/home-control-backend/commit/6ef042c
-011|cover-move-percent|ENDED|backend
+011|cover-move-percent|ENDED|backend|1f8479f|https://github.com/hectorrdez/home-control-backend/commit/1f8479f
 012|alert-rules|PENDING|backend
