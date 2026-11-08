@@ -1,0 +1,29 @@
+meta {
+  name: Settings: PUT same value does not bump the version
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"value":{"cols":4,"name":"Salon"}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("keeps version 1", function() {
+    expect(res.body.data[0].version).to.equal(1);
+  });
+}

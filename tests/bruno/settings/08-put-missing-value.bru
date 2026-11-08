@@ -1,0 +1,29 @@
+meta {
+  name: Settings: PUT without value returns invalid_setting
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"baseVersion":2}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns invalid_setting", function() {
+    expect(res.body.error).to.equal("invalid_setting");
+  });
+}

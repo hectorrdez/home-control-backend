@@ -1,0 +1,28 @@
+meta {
+  name: Settings: GET list contains the key
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/settings
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("lists the test setting sorted by key", function() {
+    expect(res.body.data).to.be.an("array");
+    const keys = res.body.data.map((s) => s.key);
+    expect(keys).to.include("test.bruno-settings");
+    expect(keys).to.deep.equal([...keys].sort());
+  });
+}

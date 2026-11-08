@@ -1,0 +1,30 @@
+meta {
+  name: Settings: PUT with matching baseVersion bumps to version 2
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"value":{"cols":5,"name":"Salon"},"baseVersion":1}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("stores the new value at version 2", function() {
+    expect(res.body.data[0].version).to.equal(2);
+    expect(res.body.data[0].value).to.deep.equal({ cols: 5, name: "Salon" });
+  });
+}

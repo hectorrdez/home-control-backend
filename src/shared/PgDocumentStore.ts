@@ -25,6 +25,11 @@ export interface PgDocumentStoreOptions<V> {
   onChanged?: (keys: string[], by: string | null) => void;
 }
 
+/** Per-write context given to `mutate` callbacks. `now` is the instant written to `updated_at`. */
+export interface MutateContext {
+  now: string;
+}
+
 const byKey = ([a]: [string, unknown], [b]: [string, unknown]) => (a < b ? -1 : 1);
 
 /**
@@ -74,13 +79,19 @@ export class PgDocumentStore<V> {
   /**
    * Applies `change` to a copy of the map, persists the diff in one transaction,
    * then publishes it. `change` returns false when nothing changed (no write).
+   * `ctx.now` is the single instant used for both the caller's stored value and
+   * the row's `updated_at`, so they always match.
    * Throws the error from `change` (validation) or the configured write error;
    * memory is unchanged on any throw.
    */
-  mutate(change: (draft: Map<string, V>) => boolean, opts: { by?: string | null } = {}): Promise<void> {
+  mutate(
+    change: (draft: Map<string, V>, ctx: MutateContext) => boolean,
+    opts: { by?: string | null } = {}
+  ): Promise<void> {
     const run = this.queue.then(async () => {
+      const now = new Date().toISOString();
       const draft = new Map(this.map);
-      if (!change(draft)) return;
+      if (!change(draft, { now })) return;
       const by = opts.by ?? null;
 
       const upserts: [string, V][] = [];
@@ -92,7 +103,7 @@ export class PgDocumentStore<V> {
       const removed = [...this.map.keys()].filter((key) => !draft.has(key));
       if (upserts.length === 0 && removed.length === 0) return;
 
-      await this.persist(upserts, removed, by);
+      await this.persist(upserts, removed, by, now);
       this.map = draft;
       // The write is already committed and published: an observer failure must not reject the caller.
       try {
@@ -119,16 +130,16 @@ export class PgDocumentStore<V> {
     return { scope, property: legacyProperty, entryLabel, max, parseEntry, createWriteError };
   }
 
-  private async persist(upserts: [string, V][], removed: string[], by: string | null): Promise<void> {
+  private async persist(upserts: [string, V][], removed: string[], by: string | null, now: string): Promise<void> {
     const { collection, scope, createWriteError } = this.opts;
     try {
       await withTransaction(async (tx) => {
         for (const [key, value] of upserts) {
           await tx.query(
-            `INSERT INTO documents (collection, key, value, updated_by) VALUES ($1, $2, $3, $4)
+            `INSERT INTO documents (collection, key, value, updated_by, updated_at) VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (collection, key) DO UPDATE SET value = EXCLUDED.value,
-               version = documents.version + 1, updated_at = now(), updated_by = $4`,
-            [collection, key, JSON.stringify(value), by]
+               version = documents.version + 1, updated_at = $5, updated_by = $4`,
+            [collection, key, JSON.stringify(value), by, now]
           );
         }
         for (const key of removed) {

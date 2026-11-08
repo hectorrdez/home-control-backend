@@ -1,0 +1,25 @@
+meta {
+  name: Settings: GET unknown key returns 404
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/settings/test.bruno-missing
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("returns setting_not_found", function() {
+    expect(res.body.error).to.equal("setting_not_found");
+  });
+}

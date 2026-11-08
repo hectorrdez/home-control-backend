@@ -31,6 +31,7 @@ async function bootIndex() {
   vi.doMock("../../src/db/health", () => ({ startDbPing: vi.fn() }));
   vi.doMock("@modules/aliases/AliasStore", () => ({ default: { load: vi.fn(), importLegacy: vi.fn() } }));
   vi.doMock("@modules/alert-rules/AlertRuleStore", () => ({ default: { load: vi.fn(), importLegacy: vi.fn() } }));
+  vi.doMock("@modules/settings/SettingStore", () => ({ default: { load: vi.fn(async () => undefined) } }));
   vi.doMock("@modules/calibrations/CalibrationStore", () => ({ default: { load, importLegacy } }));
   await import("../../src/index");
   await vi.waitFor(() => expect(listen).toHaveBeenCalled());

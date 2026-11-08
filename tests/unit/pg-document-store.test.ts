@@ -239,6 +239,25 @@ describe("PgDocumentStore mutate", () => {
     expect(stored("a")?.updated_by).toBe("client-7");
     expect(stored("b")?.updated_by).toBeNull();
   });
+
+  it("writes updated_at with the same instant handed to change as ctx.now, on insert and update", async () => {
+    seed("things", "edit", "old");
+    const store = makeStore();
+    await store.load();
+    const seenNow: string[] = [];
+    await store.mutate((draft, { now }) => {
+      seenNow.push(now);
+      draft.set("new", now);
+      draft.set("edit", `${now}!`);
+      return true;
+    });
+    expect(seenNow).toHaveLength(1);
+    expect(Number.isNaN(Date.parse(seenNow[0]))).toBe(false);
+    expect(stored("new")?.updated_at).toBe(seenNow[0]);
+    expect(stored("new")?.value).toBe(seenNow[0]);
+    expect(stored("edit")?.updated_at).toBe(seenNow[0]);
+    expect(stored("edit")?.version).toBe(2);
+  });
 });
 
 describe("importLegacyJson", () => {

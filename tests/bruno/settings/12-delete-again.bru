@@ -1,0 +1,25 @@
+meta {
+  name: Settings: DELETE is idempotent
+  type: http
+  seq: 12
+}
+
+delete {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns an empty data array when the key is already gone", function() {
+    expect(res.body.data).to.deep.equal([]);
+  });
+}

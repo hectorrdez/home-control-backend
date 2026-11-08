@@ -1,0 +1,28 @@
+meta {
+  name: Settings: GET one returns the stored setting
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the same value at version 1", function() {
+    expect(res.body.data).to.be.an("array").with.length(1);
+    expect(res.body.data[0].key).to.equal("test.bruno-settings");
+    expect(res.body.data[0].version).to.equal(1);
+    expect(res.body.data[0].value).to.deep.equal({ cols: 4, name: "Salon" });
+  });
+}

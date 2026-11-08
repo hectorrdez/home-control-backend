@@ -1,0 +1,21 @@
+meta {
+  name: Settings: GET without token returns 401
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/settings
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("returns missing_credentials", function() {
+    expect(res.body.error).to.equal("missing_credentials");
+  });
+}

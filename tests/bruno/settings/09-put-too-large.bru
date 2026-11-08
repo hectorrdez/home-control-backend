@@ -1,0 +1,33 @@
+meta {
+  name: Settings: PUT value above 65536 bytes returns 413
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/settings/test.bruno-settings
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"value":"placeholder"}
+}
+
+script:pre-request {
+  req.setBody({ value: "x".repeat(70000) });
+}
+
+assert {
+  res.status: eq 413
+}
+
+tests {
+  test("returns setting_too_large and keeps the stored value", function() {
+    expect(res.body.error).to.equal("setting_too_large");
+  });
+}

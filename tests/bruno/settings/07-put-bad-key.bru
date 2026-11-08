@@ -1,0 +1,29 @@
+meta {
+  name: Settings: PUT rejects an invalid key
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/settings/Bad%20Key
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"value":1}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns invalid_setting_key", function() {
+    expect(res.body.error).to.equal("invalid_setting_key");
+  });
+}
