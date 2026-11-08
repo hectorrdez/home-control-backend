@@ -1,0 +1,25 @@
+meta {
+  name: Events: DELETE the test alias
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_event_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the alias is removed", function() {
+    expect(res.body.data).to.deep.equal([]);
+  });
+}

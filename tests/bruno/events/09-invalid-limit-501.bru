@@ -1,0 +1,25 @@
+meta {
+  name: Events: limit=501 returns invalid_query
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/events?limit=501
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("invalid_query", function() {
+    expect(res.body.error).to.equal("invalid_query");
+  });
+}

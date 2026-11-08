@@ -1,0 +1,29 @@
+meta {
+  name: Events: before cursor returns older ids only
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/events?limit=2&before={{eventsCursor}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("every returned id is below the cursor, newest first", function() {
+    const cursor = Number(bru.getVar("eventsCursor"));
+    const ids = res.body.data.map((e) => Number(e.id));
+    expect(ids.length).to.be.greaterThan(0);
+    ids.forEach((id) => expect(id).to.be.lessThan(cursor));
+    expect(ids).to.deep.equal([...ids].sort((x, y) => y - x));
+  });
+}

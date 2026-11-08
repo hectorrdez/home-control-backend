@@ -10,6 +10,8 @@ import { pool } from "./db/pool";
 import { connectDb } from "./db/connect";
 import { migrate } from "./db/migrate";
 import { startDbPing } from "./db/health";
+import { startConfigChangedRecorder } from "@modules/events/EventLog";
+import { startEventRetention } from "@modules/events/EventRetention";
 
 const port = Number(process.env.API_PORT ?? 3002);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -33,6 +35,9 @@ async function bootstrap(): Promise<void> {
   await alertRuleStore.importLegacy(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
   // Settings are new in 017: no legacy JSON file to import.
   await settingStore.load();
+  // Event log (018): config_changed recorder on the bus, plus the retention job.
+  startConfigChangedRecorder();
+  startEventRetention();
   app.listen(port, () => Logger.write(`API listening on port ${port}`));
 }
 

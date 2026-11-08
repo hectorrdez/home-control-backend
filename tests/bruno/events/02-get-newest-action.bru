@@ -1,0 +1,51 @@
+meta {
+  name: Events: newest action on the test switch is ok
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/events?types=action&entityId=switch.interruptor_bano_interruptor_2&limit=1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  // The action (01) records its event fire-and-forget, so it may land after this read.
+  // Poll the same query (max 10 attempts, 500 ms apart) until this run's turn_off event shows up.
+  // sentAt is set in 01's pre-request script; older events belong to a previous run.
+  const sentAt = Number(bru.getVar("actionSentAt"));
+  const url = bru.interpolate("{{baseUrl}}/api/events?types=action&entityId=switch.interruptor_bano_interruptor_2&limit=1");
+  const headers = { Authorization: "Bearer " + bru.getProcessEnv("API_TOKEN") };
+  let found = null;
+  for (let attempt = 0; attempt < 10 && found === null; attempt++) {
+    if (attempt > 0) await bru.sleep(500);
+    const r = await bru.sendRequest({ method: "GET", url, headers });
+    const e = r.data && r.data.data && r.data.data[0];
+    // 5 s slack covers clock skew between the runner and the event's DB timestamp.
+    if (e && e.type === "action" && Date.parse(e.ts) >= sentAt - 5000 && e.payload && e.payload.action === "turn_off") {
+      found = e;
+    }
+  }
+  bru.setVar("newestTurnOff", found ? JSON.stringify(found) : "");
+}
+
+tests {
+  test("the turn_off recorded by this run is ok (retried until it appears)", function() {
+    const raw = bru.getVar("newestTurnOff");
+    expect(raw, "no turn_off event recorded by this run after 10 attempts").to.be.a("string").and.not.empty;
+    const e = JSON.parse(raw);
+    expect(e.type).to.equal("action");
+    expect(e.entityId).to.equal("switch.interruptor_bano_interruptor_2");
+    expect(e.payload.ok).to.equal(true);
+    expect(e.payload.action).to.equal("turn_off");
+  });
+}

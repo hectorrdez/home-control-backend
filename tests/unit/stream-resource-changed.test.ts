@@ -89,6 +89,13 @@ describe("StreamController resource_changed frames", () => {
     expect(appFrames(res)).toHaveLength(0);
   });
 
+  it("writes an event-log row as event: event with the stored row as data", async () => {
+    const { res } = await open();
+    const event = { id: "7", ts: "2026-11-08T10:00:00.000Z", type: "action", source: "api" };
+    appEvents.emit({ type: "event", event: event as any });
+    expect(res.writes).toContain(`event: event\ndata: ${JSON.stringify(event)}\n\n`);
+  });
+
   it("does not subscribe at all in ?once=1 smoke mode", async () => {
     const { res } = await open({ once: "1" });
     expect(res.writes).toEqual(['event: ready\ndata: {"domain":null}\n\n']);

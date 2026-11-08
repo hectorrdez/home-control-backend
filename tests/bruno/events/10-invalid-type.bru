@@ -1,0 +1,25 @@
+meta {
+  name: Events: types=Bad-Type returns invalid_query
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/events?types=Bad-Type
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("invalid_query", function() {
+    expect(res.body.error).to.equal("invalid_query");
+  });
+}

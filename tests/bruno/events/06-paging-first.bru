@@ -1,0 +1,28 @@
+meta {
+  name: Events: first page of two
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/events?limit=2
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns two events newest first and keeps the last id as cursor", function() {
+    expect(res.body.data).to.be.an("array").with.length(2);
+    const [a, b] = res.body.data.map((e) => Number(e.id));
+    expect(a).to.be.greaterThan(b);
+    bru.setVar("eventsCursor", res.body.data[1].id);
+  });
+}

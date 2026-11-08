@@ -22,6 +22,10 @@ function send(res: Response, event: string, data: unknown): void {
 
 /** Frame for an app event: `type` becomes the SSE event name, the rest is the data. */
 function sendApp(res: Response, evt: AppEvent): void {
+  if (evt.type === "event") {
+    send(res, "event", evt.event);
+    return;
+  }
   const { type, ...rest } = evt;
   const keys = rest.keys.length > MAX_EVENT_KEYS ? [] : rest.keys;
   send(res, type, { ...rest, keys });

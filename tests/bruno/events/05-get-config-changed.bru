@@ -1,0 +1,27 @@
+meta {
+  name: Events: config_changed lists the alias write
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/events?types=config_changed&limit=5
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("an aliases config_changed event is in the newest five", function() {
+    const found = res.body.data.some((e) => e.type === "config_changed" && e.payload.resource === "aliases");
+    expect(found).to.equal(true);
+    expect(res.body.data.every((e) => e.type === "config_changed")).to.equal(true);
+  });
+}

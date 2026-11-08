@@ -1,0 +1,25 @@
+meta {
+  name: Events: from after to returns invalid_query
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/events?from=2026-11-09T00:00:00Z&to=2026-11-08T00:00:00Z
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("invalid_query", function() {
+    expect(res.body.error).to.equal("invalid_query");
+  });
+}

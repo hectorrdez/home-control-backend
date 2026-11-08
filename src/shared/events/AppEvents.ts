@@ -1,21 +1,28 @@
 import { EventEmitter } from "events";
 import Logger from "@utils/Logger";
+import type { EventView } from "@modules/events/EventLog";
 
 /** Resources whose changes are announced on the SSE stream. */
 export type ChangeResource = "aliases" | "calibrations" | "alert_rules" | "settings";
 
 /**
  * Application events published on the change bus. Later features extend this
- * union (018 `event`, 019 `ha_link`, 020 `alert` / `alert_acked`).
+ * union (019 `ha_link`, 020 `alert` / `alert_acked`).
  */
-export type AppEvent = {
-  type: "resource_changed";
-  resource: ChangeResource;
-  /** Changed keys; the stream sends `[]` (refetch all) when there are more than 100. */
-  keys: string[];
-  /** Client id of the writer (X-Client-Id), or null when unknown / timer-driven. */
-  by: string | null;
-};
+export type AppEvent =
+  | {
+      type: "resource_changed";
+      resource: ChangeResource;
+      /** Changed keys; the stream sends `[]` (refetch all) when there are more than 100. */
+      keys: string[];
+      /** Client id of the writer (X-Client-Id), or null when unknown / timer-driven. */
+      by: string | null;
+    }
+  | {
+      /** A row was appended to the event log (018). Sent on SSE as `event`. */
+      type: "event";
+      event: EventView;
+    };
 
 export type AppEventListener = (evt: AppEvent) => void;
 

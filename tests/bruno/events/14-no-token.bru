@@ -1,0 +1,21 @@
+meta {
+  name: Events: GET without token returns 401
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/events
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("missing_credentials", function() {
+    expect(res.body.error).to.equal("missing_credentials");
+  });
+}

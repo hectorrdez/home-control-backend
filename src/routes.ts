@@ -9,6 +9,7 @@ import aliasesRoutes from "@modules/aliases/aliases.routes";
 import calibrationsRoutes from "@modules/calibrations/calibrations.routes";
 import alertRulesRoutes from "@modules/alert-rules/alert-rules.routes";
 import settingsRoutes from "@modules/settings/settings.routes";
+import eventsRoutes from "@modules/events/events.routes";
 // <modules:import>
 
 /**
@@ -28,4 +29,5 @@ router.use(aliasesRoutes);
 router.use(calibrationsRoutes);
 router.use(alertRulesRoutes);
 router.use(settingsRoutes);
+router.use(eventsRoutes);
 // <modules:use>
