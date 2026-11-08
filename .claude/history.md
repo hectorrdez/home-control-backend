@@ -23,6 +23,6 @@ id|slug|state|role|commit|commit_url
 018|event-log|ENDED|backend|82a4619|https://github.com/hectorrdez/home-control-backend/commit/82a4619
 019|ha-recorder|ENDED|backend|9db5b46|https://github.com/hectorrdez/home-control-backend/commit/9db5b46
 020|server-alerts|ENDED|backend|de4cfef|https://github.com/hectorrdez/home-control-backend/commit/de4cfef
-021|actuator-presets|ENDED|backend
+021|actuator-presets|ENDED|backend|945d04b|https://github.com/hectorrdez/home-control-backend/commit/945d04b
 022|ha-client-hardening|ENDED|backend|95d2b28|https://github.com/hectorrdez/home-control-backend/commit/95d2b28
 023|ha-state-cache|ENDED|backend|908f387|https://github.com/hectorrdez/home-control-backend/commit/908f387
