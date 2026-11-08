@@ -18,7 +18,7 @@ id|slug|state|role|commit|commit_url
 013|postgres-foundation|ENDED|backend|917e432|https://github.com/hectorrdez/home-control-backend/commit/917e432
 014|pg-document-store|ENDED|backend|f71ad91|https://github.com/hectorrdez/home-control-backend/commit/f71ad91
 015|stack-deploy-backup|ENDED|backend|3ac3c0d|https://github.com/hectorrdez/home-control-backend/commit/3ac3c0d
-016|change-bus-sse|ENDED|backend
+016|change-bus-sse|ENDED|backend|1390eec|https://github.com/hectorrdez/home-control-backend/commit/1390eec
 017|settings-api|PENDING|backend
 018|event-log|PENDING|backend
 019|ha-recorder|PENDING|backend
