@@ -21,8 +21,8 @@ export interface PgDocumentStoreOptions<V> {
   legacyProperty: string;
   /** Database source; defaults to the 013 pool. Injectable for tests. */
   db?: TxSource;
-  /** Called after a successful commit with the changed and removed keys. */
-  onChanged?: (keys: string[]) => void;
+  /** Called after a successful commit with the changed and removed keys and the writer (`by`, or null). */
+  onChanged?: (keys: string[], by: string | null) => void;
 }
 
 const byKey = ([a]: [string, unknown], [b]: [string, unknown]) => (a < b ? -1 : 1);
@@ -81,6 +81,7 @@ export class PgDocumentStore<V> {
     const run = this.queue.then(async () => {
       const draft = new Map(this.map);
       if (!change(draft)) return;
+      const by = opts.by ?? null;
 
       const upserts: [string, V][] = [];
       for (const [key, value] of draft) {
@@ -91,11 +92,11 @@ export class PgDocumentStore<V> {
       const removed = [...this.map.keys()].filter((key) => !draft.has(key));
       if (upserts.length === 0 && removed.length === 0) return;
 
-      await this.persist(upserts, removed, opts.by ?? null);
+      await this.persist(upserts, removed, by);
       this.map = draft;
       // The write is already committed and published: an observer failure must not reject the caller.
       try {
-        this.opts.onChanged?.([...upserts.map(([key]) => key), ...removed]);
+        this.opts.onChanged?.([...upserts.map(([key]) => key), ...removed], by);
       } catch (err) {
         Logger.error(`onChanged observer failed: ${(err as Error)?.message ?? String(err)}`, this.opts.scope);
       }

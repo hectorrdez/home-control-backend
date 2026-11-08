@@ -18,7 +18,7 @@ export function listAlertRules(rawEntityId?: string): AlertRule[] {
 }
 
 /** Creates a rule with a server-generated id. Returns the created rule. */
-export async function createAlertRule(rawBody: unknown): Promise<AlertRule[]> {
+export async function createAlertRule(rawBody: unknown, by: string | null = null): Promise<AlertRule[]> {
   const fields = parseRuleBody(rawBody);
   const id = randomUUID();
   await alertRuleStore.mutate((draft) => {
@@ -26,24 +26,24 @@ export async function createAlertRule(rawBody: unknown): Promise<AlertRule[]> {
     assertNoDuplicate(draft, fields, id);
     draft.set(id, fields);
     return true;
-  });
+  }, { by });
   return [{ id, ...fields }];
 }
 
 /** Replaces the rule with this id (the id is immutable). Returns the stored rule. */
-export async function replaceAlertRule(id: string, rawBody: unknown): Promise<AlertRule[]> {
+export async function replaceAlertRule(id: string, rawBody: unknown, by: string | null = null): Promise<AlertRule[]> {
   const fields = parseRuleBody(rawBody);
   await alertRuleStore.mutate((draft) => {
     if (!draft.has(id)) throw new RuleNotFoundError();
     assertNoDuplicate(draft, fields, id);
     draft.set(id, fields);
     return true;
-  });
+  }, { by });
   return [{ id, ...fields }];
 }
 
 /** Removes one rule. Idempotent. The contract response is always an empty array. */
-export async function deleteAlertRule(id: string): Promise<AlertRule[]> {
-  await alertRuleStore.mutate((draft) => draft.delete(id));
+export async function deleteAlertRule(id: string, by: string | null = null): Promise<AlertRule[]> {
+  await alertRuleStore.mutate((draft) => draft.delete(id), { by });
   return [];
 }

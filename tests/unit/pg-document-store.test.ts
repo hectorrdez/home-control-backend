@@ -210,7 +210,19 @@ describe("PgDocumentStore mutate", () => {
       draft.delete("gone");
       return true;
     });
-    expect(onChanged).toHaveBeenCalledWith(["new", "gone"]);
+    expect(onChanged).toHaveBeenCalledWith(["new", "gone"], null);
+  });
+
+  it("passes the writer id (by) to onChanged", async () => {
+    seed("things", "keep", "same");
+    const onChanged = vi.fn();
+    const store = makeStore({ onChanged });
+    await store.load();
+    await store.mutate((draft) => {
+      draft.set("keep", "other");
+      return true;
+    }, { by: "client-a" });
+    expect(onChanged).toHaveBeenCalledWith(["keep"], "client-a");
   });
 
   it("stores the by option in updated_by, null by default", async () => {

@@ -3,9 +3,12 @@ import Controller from "@templates/Controller";
 import { route, HANDLED } from "@shared/http/route";
 import { haEvents } from "./HaEvents";
 import { InvalidDomainError } from "./StreamErrors";
+import { appEvents, AppEvent } from "@shared/events/AppEvents";
 
 const HEARTBEAT_MS = 25_000;
 const DOMAIN_RE = /^[a-z_]+$/;
+/** Above this many keys the event carries `keys: []`, meaning "refetch all". */
+const MAX_EVENT_KEYS = 100;
 
 /** Reads a single query string param; repeated or missing params are ignored. */
 function queryParam(req: Request, key: string): string | undefined {
@@ -15,6 +18,13 @@ function queryParam(req: Request, key: string): string | undefined {
 
 function send(res: Response, event: string, data: unknown): void {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+/** Frame for an app event: `type` becomes the SSE event name, the rest is the data. */
+function sendApp(res: Response, evt: AppEvent): void {
+  const { type, ...rest } = evt;
+  const keys = rest.keys.length > MAX_EVENT_KEYS ? [] : rest.keys;
+  send(res, type, { ...rest, keys });
 }
 
 /**
@@ -43,10 +53,13 @@ export default class StreamController extends Controller {
     const unsubscribe = haEvents.subscribe((entity) => {
       if (!domain || entity.domain === domain) send(res, "state_changed", entity);
     });
+    // App events are not entity events, so the domain filter does not apply to them.
+    const unsubscribeApp = appEvents.subscribe((evt) => sendApp(res, evt));
     const heartbeat = setInterval(() => res.write(": ping\n\n"), HEARTBEAT_MS);
     req.on("close", () => {
       clearInterval(heartbeat);
       unsubscribe();
+      unsubscribeApp();
     });
     return HANDLED;
   });

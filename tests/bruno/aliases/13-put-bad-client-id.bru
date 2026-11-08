@@ -1,0 +1,30 @@
+meta {
+  name: Aliases: PUT with a bad X-Client-Id still succeeds
+  type: http
+  seq: 13
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_client_id_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+  X-Client-Id: not-a-uuid
+}
+
+body:json {
+  {"alias":"Cliente id invalido"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("an invalid client id is ignored, not an error", function() {
+    expect(res.body.data[0].alias).to.equal("Cliente id invalido");
+  });
+}

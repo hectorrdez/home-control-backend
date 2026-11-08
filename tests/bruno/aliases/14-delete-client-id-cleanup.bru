@@ -1,0 +1,25 @@
+meta {
+  name: Aliases: cleanup client-id test entity
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_client_id_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("removes the test alias", function() {
+    expect(res.body.data).to.be.an("array").with.length(0);
+  });
+}

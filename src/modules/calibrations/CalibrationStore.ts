@@ -1,5 +1,6 @@
 import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
 import type { TxSource } from "../../db/pool";
+import { appEvents } from "../../shared/events/AppEvents";
 import { CalibrationWriteFailedError } from "./CalibrationErrors";
 import { isValidCalibrationRecord, isValidEntityId, MAX_CALIBRATIONS } from "./CalibrationValidation";
 
@@ -35,6 +36,7 @@ export class CalibrationStore {
         return { openMs: r.openMs, closeMs: r.closeMs, position: r.position, calibratedAt: r.calibratedAt };
       },
       createWriteError: () => new CalibrationWriteFailedError(),
+      onChanged: (keys, by) => appEvents.emit({ type: "resource_changed", resource: "calibrations", keys, by }),
     });
   }
 
@@ -57,8 +59,8 @@ export class CalibrationStore {
   }
 
   /** `change` returns false when nothing changed (no write). Throws its error or CalibrationWriteFailedError. */
-  mutate(change: (draft: Map<string, CalibrationRecord>) => boolean): Promise<void> {
-    return this.store.mutate(change);
+  mutate(change: (draft: Map<string, CalibrationRecord>) => boolean, opts: { by?: string | null } = {}): Promise<void> {
+    return this.store.mutate(change, opts);
   }
 }
 

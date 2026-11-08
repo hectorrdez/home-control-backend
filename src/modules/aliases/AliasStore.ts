@@ -1,5 +1,6 @@
 import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
 import type { TxSource } from "../../db/pool";
+import { appEvents } from "../../shared/events/AppEvents";
 import { AliasWriteFailedError } from "./AliasErrors";
 import { isValidAlias, isValidEntityId, MAX_ALIASES } from "./AliasValidation";
 
@@ -25,6 +26,7 @@ export class AliasStore {
       max: MAX_ALIASES,
       parseEntry: (entityId, raw) => (isValidEntityId(entityId) && typeof raw === "string" && isValidAlias(raw) ? raw : undefined),
       createWriteError: () => new AliasWriteFailedError(),
+      onChanged: (keys, by) => appEvents.emit({ type: "resource_changed", resource: "aliases", keys, by }),
     });
   }
 
@@ -47,8 +49,8 @@ export class AliasStore {
   }
 
   /** `change` returns false when nothing changed (no write). Throws its error or AliasWriteFailedError. */
-  mutate(change: (draft: Map<string, string>) => boolean): Promise<void> {
-    return this.store.mutate(change);
+  mutate(change: (draft: Map<string, string>) => boolean, opts: { by?: string | null } = {}): Promise<void> {
+    return this.store.mutate(change, opts);
   }
 }
 

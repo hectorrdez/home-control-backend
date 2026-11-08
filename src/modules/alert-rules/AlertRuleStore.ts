@@ -1,5 +1,6 @@
 import { PgDocumentStore, importLegacyJson } from "../../shared/PgDocumentStore";
 import type { TxSource } from "../../db/pool";
+import { appEvents } from "../../shared/events/AppEvents";
 import { AlertRulesWriteFailedError } from "./AlertRuleErrors";
 import { AlertRuleFields, MAX_ALERT_RULES, readRuleFields } from "./AlertRuleValidation";
 
@@ -28,6 +29,7 @@ export class AlertRuleStore {
       max: MAX_ALERT_RULES,
       parseEntry: (id, raw) => (UUID_RE.test(id) ? readRuleFields(raw) : undefined),
       createWriteError: () => new AlertRulesWriteFailedError(),
+      onChanged: (keys, by) => appEvents.emit({ type: "resource_changed", resource: "alert_rules", keys, by }),
     });
   }
 
@@ -54,8 +56,8 @@ export class AlertRuleStore {
   }
 
   /** `change` returns false when nothing changed (no write). Throws its error or AlertRulesWriteFailedError. */
-  mutate(change: (draft: Map<string, AlertRuleFields>) => boolean): Promise<void> {
-    return this.store.mutate(change);
+  mutate(change: (draft: Map<string, AlertRuleFields>) => boolean, opts: { by?: string | null } = {}): Promise<void> {
+    return this.store.mutate(change, opts);
   }
 }
 

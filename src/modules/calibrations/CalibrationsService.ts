@@ -8,7 +8,7 @@ export function listCalibrations(): CalibrationEntry[] {
 }
 
 /** Creates or replaces the calibration for one cover. Position is reset to null (unknown). */
-export async function setCalibration(rawEntityId: string, rawBody: unknown): Promise<CalibrationEntry[]> {
+export async function setCalibration(rawEntityId: string, rawBody: unknown, by: string | null = null): Promise<CalibrationEntry[]> {
   const entityId = parseEntityId(rawEntityId);
   const { openMs, closeMs } = parseCalibrationBody(rawBody);
   const record: CalibrationRecord = {
@@ -21,13 +21,13 @@ export async function setCalibration(rawEntityId: string, rawBody: unknown): Pro
     if (!draft.has(entityId) && draft.size >= MAX_CALIBRATIONS) throw new TooManyCalibrationsError();
     draft.set(entityId, record);
     return true;
-  });
+  }, { by });
   return [{ entityId, ...record }];
 }
 
 /** Removes the calibration for one cover. Idempotent. The contract response is always an empty array. */
-export async function deleteCalibration(rawEntityId: string): Promise<CalibrationEntry[]> {
+export async function deleteCalibration(rawEntityId: string, by: string | null = null): Promise<CalibrationEntry[]> {
   const entityId = parseEntityId(rawEntityId);
-  await calibrationStore.mutate((draft) => draft.delete(entityId));
+  await calibrationStore.mutate((draft) => draft.delete(entityId), { by });
   return [];
 }

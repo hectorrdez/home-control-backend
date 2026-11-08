@@ -1,0 +1,31 @@
+meta {
+  name: Aliases: PUT accepts X-Client-Id header
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{baseUrl}}/api/aliases/sensor.bruno_client_id_test
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+  X-Client-Id: 3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b
+  X-Client-Name: Bruno
+}
+
+body:json {
+  {"alias":"Cliente con id"}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("stores the alias when the identity headers are valid", function() {
+    expect(res.body.data[0].alias).to.equal("Cliente con id");
+  });
+}
