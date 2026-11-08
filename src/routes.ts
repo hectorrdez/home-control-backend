@@ -11,6 +11,7 @@ import alertRulesRoutes from "@modules/alert-rules/alert-rules.routes";
 import settingsRoutes from "@modules/settings/settings.routes";
 import eventsRoutes from "@modules/events/events.routes";
 import alertsRoutes from "@modules/alerts/alerts.routes";
+import presetsRoutes from "@modules/presets/presets.routes";
 // <modules:import>
 
 /**
@@ -32,4 +33,5 @@ router.use(alertRulesRoutes);
 router.use(settingsRoutes);
 router.use(eventsRoutes);
 router.use(alertsRoutes);
+router.use(presetsRoutes);
 // <modules:use>

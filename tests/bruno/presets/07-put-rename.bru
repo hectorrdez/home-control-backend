@@ -1,0 +1,32 @@
+meta {
+  name: Presets: PUT renames preset
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/presets/{{presetId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"name":"Medio","percent":40}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the renamed preset with the same id", function() {
+    const r = res.body.data[0];
+    expect(r.id).to.equal(bru.getVar("presetId"));
+    expect(r.name).to.equal("Medio");
+    expect(r.percent).to.equal(40);
+  });
+}

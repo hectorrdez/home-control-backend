@@ -1,0 +1,36 @@
+meta {
+  name: Presets: POST creates preset
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/presets
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"cover.bruno_calibration_test","name":"Media","percent":50}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the created preset with a server id", function() {
+    const r = res.body.data[0];
+    expect(res.body.data).to.be.an("array").with.length(1);
+    expect(r.id).to.be.a("string").and.not.empty;
+    expect(r.entityId).to.equal("cover.bruno_calibration_test");
+    expect(r.name).to.equal("Media");
+    expect(r.percent).to.equal(50);
+    expect(r.createdAt).to.be.a("string");
+    bru.setVar("presetId", r.id);
+  });
+}

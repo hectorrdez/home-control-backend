@@ -5,6 +5,7 @@ import { warnIfHaMisconfigured } from "@modules/ha/HaClient";
 import aliasStore from "@modules/aliases/AliasStore";
 import calibrationStore from "@modules/calibrations/CalibrationStore";
 import alertRuleStore from "@modules/alert-rules/AlertRuleStore";
+import presetStore from "@modules/presets/PresetStore";
 import settingStore from "@modules/settings/SettingStore";
 import { pool } from "./db/pool";
 import { connectDb } from "./db/connect";
@@ -36,6 +37,8 @@ async function bootstrap(): Promise<void> {
   await calibrationStore.importLegacy(process.env.CALIBRATIONS_FILE || "/data/calibrations.json");
   await alertRuleStore.load();
   await alertRuleStore.importLegacy(process.env.ALERT_RULES_FILE || "/data/alert-rules.json");
+  // Presets (021) are new: no legacy JSON file to import.
+  await presetStore.load();
   // Settings are new in 017: no legacy JSON file to import.
   await settingStore.load();
   // Event log (018): config_changed recorder on the bus, plus the retention job.

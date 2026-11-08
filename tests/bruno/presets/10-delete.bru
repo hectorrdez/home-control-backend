@@ -1,0 +1,25 @@
+meta {
+  name: Presets: DELETE removes preset
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/api/presets/{{presetId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns an empty array", function() {
+    expect(res.body.data).to.deep.equal([]);
+  });
+}

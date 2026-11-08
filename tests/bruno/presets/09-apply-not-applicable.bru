@@ -1,0 +1,22 @@
+meta {
+  name: Presets: apply on uncalibrated test cover without position feedback
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/presets/{{presetId}}/apply
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+tests {
+  test("409 preset_not_applicable, or 404 entity_not_found when HA has no such cover", function() {
+    expect(res.status).to.be.oneOf([409, 404]);
+    expect(res.body.error).to.be.oneOf(["preset_not_applicable", "entity_not_found"]);
+  });
+}

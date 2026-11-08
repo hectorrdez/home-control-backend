@@ -13,6 +13,7 @@ vi.mock("@modules/aliases/AliasStore", () => ({ default: { load, importLegacy } 
 vi.mock("@modules/calibrations/CalibrationStore", () => ({ default: { load, importLegacy } }));
 vi.mock("@modules/alert-rules/AlertRuleStore", () => ({ default: { load, importLegacy } }));
 vi.mock("@modules/settings/SettingStore", () => ({ default: { load: vi.fn(async () => undefined) } }));
+vi.mock("@modules/presets/PresetStore", () => ({ default: { load: vi.fn(async () => undefined) } }));
 
 // The database is stubbed: bootstrap must connect and migrate before it loads stores and listens.
 const connectDb = vi.fn(async () => undefined);

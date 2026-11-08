@@ -1,0 +1,29 @@
+meta {
+  name: Presets: PUT unknown id is preset_not_found
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/presets/3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"name":"Ghost","percent":10}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("typed preset_not_found error", function() {
+    expect(res.body.error).to.equal("preset_not_found");
+  });
+}

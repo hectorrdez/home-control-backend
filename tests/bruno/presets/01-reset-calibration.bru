@@ -1,0 +1,19 @@
+meta {
+  name: Presets: reset calibration of test cover
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/api/calibrations/cover.bruno_calibration_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}

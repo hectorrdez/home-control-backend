@@ -1,0 +1,26 @@
+meta {
+  name: Presets: GET lists by entityId
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/presets?entityId=cover.bruno_calibration_test
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("lists the created preset", function() {
+    const ids = res.body.data.map((p) => p.id);
+    expect(ids).to.include(bru.getVar("presetId"));
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Presets: POST non-cover entity is domain_not_allowed
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/presets
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"light.x","name":"Lamp","percent":50}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("typed domain_not_allowed error", function() {
+    expect(res.body.error).to.equal("domain_not_allowed");
+  });
+}

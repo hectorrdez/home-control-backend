@@ -1,0 +1,29 @@
+meta {
+  name: Presets: POST duplicate name (case-insensitive) conflicts
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/presets
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"cover.bruno_calibration_test","name":" media ","percent":10}
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("typed duplicate_preset error", function() {
+    expect(res.body.error).to.equal("duplicate_preset");
+  });
+}

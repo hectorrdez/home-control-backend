@@ -1,0 +1,29 @@
+meta {
+  name: Presets: POST percent 101 is invalid
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/presets
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+body:json {
+  {"entityId":"cover.bruno_calibration_test","name":"Too high","percent":101}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("typed invalid_preset error", function() {
+    expect(res.body.error).to.equal("invalid_preset");
+  });
+}
