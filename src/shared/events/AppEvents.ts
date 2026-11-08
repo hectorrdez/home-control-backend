@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import Logger from "@utils/Logger";
 import type { EventView } from "@modules/events/EventLog";
+import type { AlertView } from "@modules/alerts/AlertService";
 
 /** Resources whose changes are announced on the SSE stream. */
 export type ChangeResource = "aliases" | "calibrations" | "alert_rules" | "settings";
@@ -28,6 +29,18 @@ export type AppEvent =
       type: "ha_link";
       connected: boolean;
       at: string;
+    }
+  | {
+      /** An alert fired (020). Sent on SSE as `alert` with the alert as data. */
+      type: "alert";
+      alert: AlertView;
+    }
+  | {
+      /** An alert was acknowledged for the first time (020). Sent on SSE as `alert_acked`. */
+      type: "alert_acked";
+      id: string;
+      ackedAt: string;
+      ackedBy: string | null;
     };
 
 export type AppEventListener = (evt: AppEvent) => void;

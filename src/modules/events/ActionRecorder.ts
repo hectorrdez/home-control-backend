@@ -2,6 +2,7 @@ import type { Response } from "express";
 import ApiError from "@errors/ApiError";
 import { InvalidEntityIdError } from "@modules/entities/EntityErrors";
 import { eventLog } from "./EventLog";
+import { recentActions } from "@modules/alerts/RecentActions";
 
 export interface ActionRecordContext {
   entityId: string;
@@ -46,5 +47,7 @@ export async function recordEntityAction<T>(
     throw err;
   }
   record(true);
+  // 020: a successful action explains the next state change of this entity as "user interacted".
+  recentActions.record(ctx.entityId, { clientId: res.locals.clientId ?? null, clientName: res.locals.clientName ?? null });
   return out;
 }

@@ -1,0 +1,25 @@
+meta {
+  name: Alerts: bad status returns 400 invalid_query
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/alerts?status=bad
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Alerts: bad status returns 400 invalid_query", function() {
+    expect(res.body.error).to.equal("invalid_query");
+  });
+}

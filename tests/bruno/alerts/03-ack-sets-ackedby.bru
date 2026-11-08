@@ -1,0 +1,29 @@
+meta {
+  name: Alerts: ack with X-Client-Id sets ackedBy
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/alerts/{{alertId}}/ack
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+  X-Client-Id: 123e4567-e89b-12d3-a456-426614174099
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Alerts: ack with X-Client-Id sets ackedBy", function() {
+    const r = res.body.data[0];
+        expect(r.ackedAt).to.be.a("string").and.not.empty;
+        expect(r.ackedBy).to.equal("123e4567-e89b-12d3-a456-426614174099");
+        bru.setVar("ackedAt", r.ackedAt);
+  });
+}

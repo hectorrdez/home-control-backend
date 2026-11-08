@@ -1,0 +1,21 @@
+meta {
+  name: Alerts: GET without token returns 401
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/alerts
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Alerts: GET without token returns 401", function() {
+    expect(res.body.error).to.equal("missing_credentials");
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Alerts: ack of an unknown uuid returns 404
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/alerts/00000000-0000-4000-8000-000000000000/ack
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("Alerts: ack of an unknown uuid returns 404", function() {
+    expect(res.body.error).to.equal("alert_not_found");
+  });
+}

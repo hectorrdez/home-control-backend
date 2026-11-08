@@ -1,0 +1,26 @@
+meta {
+  name: Alerts: status=all still includes the acked alert
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/alerts?status=all&limit=200
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Alerts: status=all still includes the acked alert", function() {
+    const a = res.body.data.find((x) => x.id === bru.getVar("alertId"));
+        expect(a.ackedAt).to.be.a("string").and.not.empty;
+  });
+}

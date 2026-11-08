@@ -14,6 +14,7 @@ import { startConfigChangedRecorder } from "@modules/events/EventLog";
 import { startEventRetention } from "@modules/events/EventRetention";
 import { startHaRecorder } from "@modules/events/HaRecorder";
 import { haEvents } from "@modules/stream/HaEvents";
+import { startAlertService } from "@modules/alerts/AlertService";
 
 const port = Number(process.env.API_PORT ?? 3002);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -43,6 +44,8 @@ async function bootstrap(): Promise<void> {
   // Always-on HA link (019): recorder first so the boot connection is logged, then keep the socket open.
   startHaRecorder();
   haEvents.keepAlive();
+  // Server-side alert engine (020): evaluates every live change; silent on seeding and reconnects.
+  startAlertService();
   app.listen(port, () => Logger.write(`API listening on port ${port}`));
 }
 

@@ -30,6 +30,14 @@ function sendApp(res: Response, evt: AppEvent): void {
     send(res, "ha_link", { connected: evt.connected, at: evt.at });
     return;
   }
+  if (evt.type === "alert") {
+    send(res, "alert", evt.alert);
+    return;
+  }
+  if (evt.type === "alert_acked") {
+    send(res, "alert_acked", { id: evt.id, ackedAt: evt.ackedAt, ackedBy: evt.ackedBy });
+    return;
+  }
   const { type, ...rest } = evt;
   const keys = rest.keys.length > MAX_EVENT_KEYS ? [] : rest.keys;
   send(res, type, { ...rest, keys });

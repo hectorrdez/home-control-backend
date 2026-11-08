@@ -1,0 +1,27 @@
+meta {
+  name: Alerts: GET open list contains the new alert unacked
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/alerts?limit=200
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Alerts: GET open list contains the new alert unacked", function() {
+    const a = res.body.data.find((x) => x.id === bru.getVar("alertId"));
+        expect(a).to.not.be.undefined;
+        expect(a.ackedAt).to.equal(null);
+  });
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Alerts: event log has the alert and its ack
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/events?types=alert,alert_acked&limit=5
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Alerts: event log has the alert and its ack", function() {
+    const types = res.body.data.map((e) => e.type);
+        expect(types).to.include("alert");
+        expect(types).to.include("alert_acked");
+  });
+}

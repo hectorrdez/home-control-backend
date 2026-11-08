@@ -1,0 +1,25 @@
+meta {
+  name: Alerts: acked alert is gone from the open list
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/alerts?limit=200
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Alerts: acked alert is gone from the open list", function() {
+    expect(res.body.data.find((x) => x.id === bru.getVar("alertId"))).to.be.undefined;
+  });
+}

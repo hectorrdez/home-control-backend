@@ -27,6 +27,7 @@ async function bootIndex() {
   vi.doMock("@modules/ha/HaClient", () => ({ warnIfHaMisconfigured: vi.fn(), haGet: vi.fn(), haPostText: vi.fn() }));
   vi.doMock("@modules/events/HaRecorder", () => ({ startHaRecorder: vi.fn() }));
   vi.doMock("@modules/stream/HaEvents", () => ({ haEvents: { keepAlive: vi.fn() } }));
+  vi.doMock("@modules/alerts/AlertService", () => ({ startAlertService: vi.fn() }));
   vi.doMock("../../src/db/pool", () => ({ pool: {} }));
   vi.doMock("../../src/db/connect", () => ({ connectDb: vi.fn(async () => undefined) }));
   vi.doMock("../../src/db/migrate", () => ({ migrate: vi.fn(async () => undefined) }));
