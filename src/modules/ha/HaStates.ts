@@ -1,6 +1,7 @@
 import Logger from "@utils/Logger";
 import { haGet, haGetOptional, haPostText } from "./HaClient";
 import coverMoves from "@modules/covers/CoverMoves";
+import { haCache } from "./HaCache";
 
 /** Raw Home Assistant state object (only the fields we read). */
 export interface HaState {
@@ -8,6 +9,7 @@ export interface HaState {
   state: string;
   attributes: Record<string, unknown>;
   last_changed: string;
+  last_updated?: string;
 }
 
 /** Normalized entity shape exposed to clients. */
@@ -54,7 +56,9 @@ const SAFE_ATTRIBUTES = [
 const AREA_CACHE_MS = 30_000;
 let areaCache: { at: number; byEntity: Map<string, AreaRef> } | null = null;
 
+/** Full state list: from the WebSocket cache when ready, else REST. */
 export async function fetchStates(): Promise<HaState[]> {
+  if (haCache.isReady()) return haCache.allStates();
   return haGet<HaState[]>("/api/states");
 }
 
@@ -63,6 +67,7 @@ export async function fetchStates(): Promise<HaState[]> {
  * Cached briefly so a list call does not hit HA twice.
  */
 export async function fetchAreaIndex(): Promise<Map<string, AreaRef>> {
+  if (haCache.isReady()) return haCache.areas();
   if (areaCache && Date.now() - areaCache.at < AREA_CACHE_MS) return areaCache.byEntity;
 
   const template =
@@ -85,6 +90,7 @@ let areaListCache: { at: number; areas: AreaRef[] } | null = null;
 
 /** Every area defined in HA, including areas with no entities. Cached like fetchAreaIndex. */
 export async function fetchAreaList(): Promise<AreaRef[]> {
+  if (haCache.isReady()) return haCache.areaEntries();
   if (areaListCache && Date.now() - areaListCache.at < AREA_CACHE_MS) return areaListCache.areas;
 
   const text = await haPostText("/api/template", { template: AREA_LIST_TEMPLATE });
@@ -127,6 +133,7 @@ export function parseDeviceNames(text: string): Map<string, string> {
  * Never rejects: any failure logs a warning and yields an empty map (every deviceName = null).
  */
 export async function fetchDeviceNameIndex(): Promise<Map<string, string>> {
+  if (haCache.isReady()) return haCache.devices();
   if (deviceCache && Date.now() - deviceCache.at < deviceCache.ttl) return deviceCache.byEntity;
   if (deviceInflight) return deviceInflight;
 
@@ -183,5 +190,6 @@ export async function normalizeLive(state: HaState): Promise<NormalizedEntity> {
 
 /** Single state lookup helper for control/action responses. */
 export async function fetchState(entityId: string): Promise<HaState | null> {
+  if (haCache.isReady()) return haCache.state(entityId);
   return haGetOptional<HaState>(`/api/states/${encodeURIComponent(entityId)}`);
 }

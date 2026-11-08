@@ -54,14 +54,16 @@ describe("HaEventHub heartbeat", () => {
     const ws = FakeWebSocket.instances[0];
     authenticate(ws);
     expect(ws.sent.find((m) => m.type === "subscribe_events")?.id).toBe(1);
+    // ids 2-5 are the HA cache's four list requests, 6-8 its registry subscriptions
+    expect(ws.sent.filter((m) => m.id !== undefined).map((m) => m.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
 
     vi.advanceTimersByTime(30_000);
     const ping = ws.sent.find((m) => m.type === "ping");
-    expect(ping).toEqual({ id: 2, type: "ping" });
+    expect(ping).toEqual({ id: 9, type: "ping" });
 
-    ws.emit({ type: "pong", id: 2 });
+    ws.emit({ type: "pong", id: 9 });
     vi.advanceTimersByTime(30_000);
-    expect(ws.sent.filter((m) => m.type === "ping").map((m) => m.id)).toEqual([2, 3]);
+    expect(ws.sent.filter((m) => m.type === "ping").map((m) => m.id)).toEqual([9, 10]);
     expect(hub.status.connected).toBe(true);
   });
 

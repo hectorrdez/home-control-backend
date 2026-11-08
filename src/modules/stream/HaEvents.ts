@@ -1,5 +1,6 @@
 import Logger from "@utils/Logger";
 import { fetchAreaIndex, fetchDeviceNameIndex, normalizeEntity, AreaRef, HaState, NormalizedEntity } from "@modules/ha/HaStates";
+import { haCache } from "@modules/ha/HaCache";
 
 type Listener = (entity: NormalizedEntity) => void;
 export type LinkListener = (connected: boolean) => void;
@@ -78,6 +79,12 @@ export class HaEventHub {
     const ws = new WebSocket(`${base.replace(/^http/i, "ws")}/api/websocket`);
     this.ws = ws;
     let nextId = SUBSCRIBE_ID + 1;
+    /** Every command on this socket takes the next id (shared with the heartbeat and the HA cache). */
+    const send = (payload: Record<string, unknown>): number => {
+      const id = nextId++;
+      ws.send(JSON.stringify({ ...payload, id }));
+      return id;
+    };
     let heartbeat: NodeJS.Timeout | null = null;
     let pongTimer: NodeJS.Timeout | null = null;
     const stopHeartbeat = () => {
@@ -101,6 +108,7 @@ export class HaEventHub {
         Logger.write("HA state stream connected", "StreamHub");
         this.setLinked(true);
         ws.send(JSON.stringify({ id: SUBSCRIBE_ID, type: "subscribe_events", event_type: "state_changed" }));
+        haCache.start(send);
         stopHeartbeat();
         heartbeat = setInterval(() => {
           if (this.ws !== ws) return stopHeartbeat(); // detached by close() or a previous timeout
@@ -129,8 +137,13 @@ export class HaEventHub {
         stopHeartbeat();
         this.setLinked(false);
         ws.close();
+      } else if (msg.type === "result") {
+        haCache.onResult(msg);
       } else if (msg.type === "event" && msg.id === SUBSCRIBE_ID) {
+        haCache.onStateChanged(msg.event?.data);
         void this.onStateChanged(msg.event?.data?.new_state as HaState | null | undefined);
+      } else if (msg.type === "event" && haCache.ownsSubscription(msg.id)) {
+        haCache.onRegistryEvent(msg.id);
       }
     };
 
@@ -149,6 +162,7 @@ export class HaEventHub {
   /** Updates the link state and notifies link listeners, only when the value really changes. */
   private setLinked(connected: boolean): void {
     if (this.link.connected === connected) return;
+    if (!connected) haCache.onDisconnect();
     this.link = { connected, at: new Date().toISOString() };
     for (const fn of this.linkListeners) {
       try {

@@ -46,7 +46,7 @@ describe("GET /api/health db field", () => {
       health.markDbUp();
       const res = await fetch(`${app.base}/health`);
       expect(res.status).toBe(200);
-      expect((await res.json()).data).toEqual([{ online: true, db: "up" }]);
+      expect((await res.json()).data).toEqual([{ online: true, db: "up", haCache: "off" }]);
     } finally {
       await app.close();
     }

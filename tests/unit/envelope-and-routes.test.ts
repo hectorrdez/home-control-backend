@@ -232,7 +232,7 @@ describe("app-level envelope over HTTP", () => {
     try {
       const res = await fetch(`${app.base}/health`);
       expect(res.status).toBe(200);
-      expect((await res.json()).data).toEqual([{ online: true, db: "down" }]);
+      expect((await res.json()).data).toEqual([{ online: true, db: "down", haCache: "off" }]);
     } finally {
       await app.close();
     }

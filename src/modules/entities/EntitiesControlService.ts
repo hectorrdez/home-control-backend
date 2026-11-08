@@ -1,5 +1,6 @@
 import { haPostJson } from "@modules/ha/HaClient";
 import { fetchState, HaState, normalizeLive, NormalizedEntity } from "@modules/ha/HaStates";
+import { haCache } from "@modules/ha/HaCache";
 import coverMoves from "@modules/covers/CoverMoves";
 import {
   DomainNotAllowedError,
@@ -114,5 +115,6 @@ export async function controlEntity(
   else await send();
 
   const fresh = reply.find((s) => s.entity_id === entityId) ?? (await fetchState(entityId)) ?? existing;
+  haCache.applyState(fresh);
   return normalizeLive(fresh);
 }

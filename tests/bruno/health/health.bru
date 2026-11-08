@@ -14,6 +14,7 @@ assert {
   res.status: eq 200
   res.body.data[0].online: eq true
   res.body.data[0].db: eq up
+  res.body.data[0].haCache: in ready,warming,off
 }
 
 tests {
@@ -21,5 +22,9 @@ tests {
     expect(res.body.data).to.be.an("array");
     expect(res.body.data[0].online).to.equal(true);
     expect(res.body.data[0].db).to.equal("up");
+  });
+
+  test("reports the HA cache state", function() {
+    expect(["ready", "warming", "off"]).to.include(res.body.data[0].haCache);
   });
 }
