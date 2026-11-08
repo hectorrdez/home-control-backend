@@ -24,5 +24,5 @@ id|slug|state|role|commit|commit_url
 019|ha-recorder|ENDED|backend|9db5b46|https://github.com/hectorrdez/home-control-backend/commit/9db5b46
 020|server-alerts|PENDING|backend
 021|actuator-presets|PENDING|backend
-022|ha-client-hardening|PENDING|backend
+022|ha-client-hardening|ENDED|backend|95d2b28|https://github.com/hectorrdez/home-control-backend/commit/95d2b28
 023|ha-state-cache|PENDING|backend
