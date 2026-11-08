@@ -100,7 +100,11 @@ describe("fetchStates / fetchState", () => {
 
     await expect(fetchStates()).resolves.toEqual(all);
     expect(fetchMock.mock.calls[0][0]).toBe("http://ha.test:8123/api/states");
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).endsWith("/light.b") ? new Response(JSON.stringify(all[1]), { status: 200 }) : new Response("", { status: 404 })
+    );
     await expect(fetchState("light.b")).resolves.toEqual(all[1]);
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe("http://ha.test:8123/api/states/light.b");
     await expect(fetchState("light.zzz")).resolves.toBeNull();
   });
 });

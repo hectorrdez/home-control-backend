@@ -8,7 +8,7 @@ import { NotCalibratedError, PositionUnknownError } from "@modules/covers/CoverM
 import { parsePercent, setCoverPercent } from "@modules/covers/CoverPercentService";
 import { controlEntity } from "@modules/entities/EntitiesControlService";
 import { normalizeEntity, HaState } from "@modules/ha/HaStates";
-import { haGet, haPostText } from "@modules/ha/HaClient";
+import { haGet, haGetOptional, haPostJson, haPostText } from "@modules/ha/HaClient";
 import EntitiesController from "@modules/entities/EntitiesController";
 import { fakeRes, silenceConsole } from "./helpers";
 const docs = await vi.hoisted(async () => (await import("./fake-documents-db")).createFakeDocumentDb());
@@ -16,6 +16,8 @@ vi.mock("pg", () => ({ Pool: class { constructor() { return Object.assign(docs, 
 
 vi.mock("@modules/ha/HaClient", () => ({
   haGet: vi.fn(),
+  haGetOptional: vi.fn(),
+  haPostJson: vi.fn(),
   haPostText: vi.fn(),
   warnIfHaMisconfigured: vi.fn(),
 }));
@@ -32,7 +34,10 @@ const COVER_STATE: HaState = {
 
 let dir: string;
 const services = () =>
-  vi.mocked(haPostText).mock.calls.map(([p]) => String(p)).filter((p) => p.startsWith("/api/services/cover/")).map((p) => p.split("/").pop());
+  [...vi.mocked(haPostText).mock.calls, ...vi.mocked(haPostJson).mock.calls]
+    .map(([p]) => String(p))
+    .filter((p) => p.startsWith("/api/services/cover/"))
+    .map((p) => p.split("/").pop());
 const flush = () => calibrationStore.mutate(() => false);
 
 beforeEach(async () => {
@@ -42,6 +47,8 @@ beforeEach(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "cover-percent-"));
   await calibrationStore.load();
   vi.mocked(haGet).mockReset().mockResolvedValue([COVER_STATE]);
+  vi.mocked(haGetOptional).mockReset().mockResolvedValue(COVER_STATE);
+  vi.mocked(haPostJson).mockReset().mockResolvedValue([]);
   vi.mocked(haPostText).mockReset().mockResolvedValue("");
 });
 
@@ -95,6 +102,7 @@ describe("setCoverPercent validation order", () => {
 
   it("returns entity_not_found (404) for a calibrated cover that HA does not know", async () => {
     await calibrate(0, "cover.bruno_missing_test");
+    vi.mocked(haGetOptional).mockResolvedValueOnce(null);
     await expect(setCoverPercent("cover.bruno_missing_test", { percent: 100 })).rejects.toBeInstanceOf(EntityNotFoundError);
     expect(haPostText).not.toHaveBeenCalled();
   });

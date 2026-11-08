@@ -1,5 +1,5 @@
 import Logger from "@utils/Logger";
-import { fetchAreaIndex, fetchDeviceNameIndex, normalizeEntity, HaState, NormalizedEntity } from "@modules/ha/HaStates";
+import { fetchAreaIndex, fetchDeviceNameIndex, normalizeEntity, AreaRef, HaState, NormalizedEntity } from "@modules/ha/HaStates";
 
 type Listener = (entity: NormalizedEntity) => void;
 export type LinkListener = (connected: boolean) => void;
@@ -13,6 +13,11 @@ export interface HaLinkStatus {
 /** Reconnect delays in ms; the last one repeats. Reset after a successful auth. */
 const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
 const SUBSCRIBE_ID = 1;
+/** Application-level heartbeat: a half-open TCP link is only detected by a missing pong. */
+const HEARTBEAT_MS = 30_000;
+const PONG_TIMEOUT_MS = 10_000;
+/** The area index is optional; a failing one is logged at most once per minute. */
+const AREA_WARN_MS = 60_000;
 
 /**
  * One shared Home Assistant WebSocket. Normally it is opened when the first
@@ -29,6 +34,7 @@ export class HaEventHub {
   private timer: NodeJS.Timeout | null = null;
   private permanent = false;
   private link: HaLinkStatus = { connected: false, at: null };
+  private lastAreaWarnAt = Number.NEGATIVE_INFINITY;
 
   /** Registers a listener and returns the function that removes it. */
   subscribe(fn: Listener): () => void {
@@ -71,6 +77,15 @@ export class HaEventHub {
 
     const ws = new WebSocket(`${base.replace(/^http/i, "ws")}/api/websocket`);
     this.ws = ws;
+    let nextId = SUBSCRIBE_ID + 1;
+    let heartbeat: NodeJS.Timeout | null = null;
+    let pongTimer: NodeJS.Timeout | null = null;
+    const stopHeartbeat = () => {
+      if (heartbeat) clearInterval(heartbeat);
+      if (pongTimer) clearTimeout(pongTimer);
+      heartbeat = null;
+      pongTimer = null;
+    };
 
     ws.onmessage = (ev) => {
       let msg: any;
@@ -86,8 +101,32 @@ export class HaEventHub {
         Logger.write("HA state stream connected", "StreamHub");
         this.setLinked(true);
         ws.send(JSON.stringify({ id: SUBSCRIBE_ID, type: "subscribe_events", event_type: "state_changed" }));
+        stopHeartbeat();
+        heartbeat = setInterval(() => {
+          if (this.ws !== ws) return stopHeartbeat(); // detached by close() or a previous timeout
+          if (pongTimer) return;
+          try {
+            ws.send(JSON.stringify({ id: nextId++, type: "ping" }));
+          } catch {
+            // send failure: the pong timer below forces the reconnect
+          }
+          pongTimer = setTimeout(() => {
+            pongTimer = null;
+            if (this.ws !== ws) return;
+            Logger.write("HA stream heartbeat missed, reconnecting", "StreamHub", "WARN");
+            stopHeartbeat();
+            this.ws = null;
+            this.setLinked(false);
+            ws.close();
+            this.scheduleReconnect();
+          }, PONG_TIMEOUT_MS);
+        }, HEARTBEAT_MS);
+      } else if (msg.type === "pong") {
+        if (pongTimer) clearTimeout(pongTimer);
+        pongTimer = null;
       } else if (msg.type === "auth_invalid") {
         Logger.write("HA rejected the access token", "StreamHub", "WARN");
+        stopHeartbeat();
         this.setLinked(false);
         ws.close();
       } else if (msg.type === "event" && msg.id === SUBSCRIBE_ID) {
@@ -96,7 +135,8 @@ export class HaEventHub {
     };
 
     ws.onclose = () => {
-      if (this.ws !== ws) return; // closed on purpose by close()
+      stopHeartbeat();
+      if (this.ws !== ws) return; // closed on purpose by close() or by the heartbeat
       this.ws = null;
       this.setLinked(false);
       this.scheduleReconnect();
@@ -123,11 +163,22 @@ export class HaEventHub {
   private async onStateChanged(state: HaState | null | undefined): Promise<void> {
     if (!state || this.listeners.size === 0) return;
     const [areas, devices] = await Promise.all([
-      fetchAreaIndex().catch(() => new Map<string, never>()),
+      fetchAreaIndex().catch((err): Map<string, AreaRef> => {
+        this.warnAreaIndex(err);
+        return new Map();
+      }),
       fetchDeviceNameIndex(),
     ]);
     const entity = normalizeEntity(state, areas, devices);
     for (const fn of this.listeners) fn(entity);
+  }
+
+  private warnAreaIndex(err: unknown): void {
+    const now = Date.now();
+    if (now - this.lastAreaWarnAt < AREA_WARN_MS) return;
+    this.lastAreaWarnAt = now;
+    const reason = err instanceof Error ? err.message : "unknown error";
+    Logger.write(`area index unavailable, emitting empty areas: ${reason}`, "StreamHub", "WARN");
   }
 
   private wanted(): boolean {

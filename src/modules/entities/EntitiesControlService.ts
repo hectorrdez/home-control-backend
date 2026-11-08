@@ -1,5 +1,5 @@
-import { haPostText } from "@modules/ha/HaClient";
-import { fetchState, normalizeLive, NormalizedEntity } from "@modules/ha/HaStates";
+import { haPostJson } from "@modules/ha/HaClient";
+import { fetchState, HaState, normalizeLive, NormalizedEntity } from "@modules/ha/HaStates";
 import coverMoves from "@modules/covers/CoverMoves";
 import {
   DomainNotAllowedError,
@@ -103,10 +103,16 @@ export async function controlEntity(
   const existing = await fetchState(entityId);
   if (!existing) throw new EntityNotFoundError();
 
-  // HA replies with the list of states that changed; we re-read ours from it.
-  const send = () => haPostText(`/api/services/${domain}/${action}`, { entity_id: entityId, ...params });
+  // HA replies with the states that changed. Use ours from that reply when present, else one
+  // single-entity GET. The service call itself is never retried (haPostJson).
+  let reply: HaState[] = [];
+  const send = async () => {
+    const changed = await haPostJson<HaState[]>(`/api/services/${domain}/${action}`, { entity_id: entityId, ...params });
+    reply = Array.isArray(changed) ? changed : [];
+  };
   if (domain === "cover") await coverMoves.onAction(entityId, action, send);
   else await send();
 
-  return normalizeLive((await fetchState(entityId)) ?? existing);
+  const fresh = reply.find((s) => s.entity_id === entityId) ?? (await fetchState(entityId)) ?? existing;
+  return normalizeLive(fresh);
 }

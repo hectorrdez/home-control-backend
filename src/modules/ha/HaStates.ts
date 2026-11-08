@@ -1,5 +1,5 @@
 import Logger from "@utils/Logger";
-import { haGet, haPostText } from "./HaClient";
+import { haGet, haGetOptional, haPostText } from "./HaClient";
 import coverMoves from "@modules/covers/CoverMoves";
 
 /** Raw Home Assistant state object (only the fields we read). */
@@ -183,6 +183,5 @@ export async function normalizeLive(state: HaState): Promise<NormalizedEntity> {
 
 /** Single state lookup helper for control/action responses. */
 export async function fetchState(entityId: string): Promise<HaState | null> {
-  const all = await fetchStates();
-  return all.find((s) => s.entity_id === entityId) ?? null;
+  return haGetOptional<HaState>(`/api/states/${encodeURIComponent(entityId)}`);
 }

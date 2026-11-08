@@ -60,7 +60,7 @@ describe("haGet", () => {
   });
 
   it("maps a network failure to HaUnreachableError (503)", async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
     const err = await haGet("/api/").catch((e) => e);
     expect(err).toBeInstanceOf(HaUnreachableError);
     expect(err.getCode()).toBe(503);

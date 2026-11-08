@@ -455,7 +455,7 @@ describe("startHaRecorder", () => {
     const { HaEventHub } = await import("@modules/stream/HaEvents");
     const hub = new HaEventHub();
     const availability = { observe: vi.fn(), mark: vi.fn(() => 7), cancel: vi.fn(), resync: vi.fn() } as any;
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 503 })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
     const stop = startHaRecorder(hub, fakeLog() as any, availability);
 
     hub.keepAlive();

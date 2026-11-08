@@ -32,6 +32,12 @@ async function load() {
 function haRouter(routes: Record<string, (init?: RequestInit) => unknown>) {
   return vi.fn(async (url: string, init?: RequestInit) => {
     const path = new URL(url).pathname;
+    // single-entity lookups: answer from the full "/api/states" route, 404 when absent
+    if (path.startsWith("/api/states/") && routes["/api/states"]) {
+      const id = decodeURIComponent(path.slice("/api/states/".length));
+      const one = (routes["/api/states"](init) as any[]).find((s) => s.entity_id === id);
+      return one ? new Response(JSON.stringify(one), { status: 200 }) : new Response("", { status: 404 });
+    }
     const key = Object.keys(routes).find((k) => path === k || path.startsWith(k));
     if (!key) throw new Error(`unexpected HA call: ${url}`);
     const out = routes[key](init);
