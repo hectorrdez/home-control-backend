@@ -21,7 +21,7 @@ id|slug|state|role|commit|commit_url
 016|change-bus-sse|ENDED|backend|1390eec|https://github.com/hectorrdez/home-control-backend/commit/1390eec
 017|settings-api|ENDED|backend|730dbd4|https://github.com/hectorrdez/home-control-backend/commit/730dbd4
 018|event-log|ENDED|backend|82a4619|https://github.com/hectorrdez/home-control-backend/commit/82a4619
-019|ha-recorder|PENDING|backend
+019|ha-recorder|IN_PROCESS|backend
 020|server-alerts|PENDING|backend
 021|actuator-presets|PENDING|backend
 022|ha-client-hardening|PENDING|backend

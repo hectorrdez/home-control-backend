@@ -26,6 +26,10 @@ function sendApp(res: Response, evt: AppEvent): void {
     send(res, "event", evt.event);
     return;
   }
+  if (evt.type === "ha_link") {
+    send(res, "ha_link", { connected: evt.connected, at: evt.at });
+    return;
+  }
   const { type, ...rest } = evt;
   const keys = rest.keys.length > MAX_EVENT_KEYS ? [] : rest.keys;
   send(res, type, { ...rest, keys });
@@ -59,6 +63,9 @@ export default class StreamController extends Controller {
     });
     // App events are not entity events, so the domain filter does not apply to them.
     const unsubscribeApp = appEvents.subscribe((evt) => sendApp(res, evt));
+    // Current HA link state for this client (019); same tick as the subscribe, so no transition is missed.
+    const link = haEvents.status;
+    send(res, "ha_link", { connected: link.connected, at: link.at });
     const heartbeat = setInterval(() => res.write(": ping\n\n"), HEARTBEAT_MS);
     req.on("close", () => {
       clearInterval(heartbeat);

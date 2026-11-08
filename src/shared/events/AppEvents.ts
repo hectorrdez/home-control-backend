@@ -22,6 +22,12 @@ export type AppEvent =
       /** A row was appended to the event log (018). Sent on SSE as `event`. */
       type: "event";
       event: EventView;
+    }
+  | {
+      /** HA link went up or down (019). Sent on SSE as `ha_link` with data `{ connected, at }`. */
+      type: "ha_link";
+      connected: boolean;
+      at: string;
     };
 
 export type AppEventListener = (evt: AppEvent) => void;

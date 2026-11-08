@@ -12,6 +12,8 @@ import { migrate } from "./db/migrate";
 import { startDbPing } from "./db/health";
 import { startConfigChangedRecorder } from "@modules/events/EventLog";
 import { startEventRetention } from "@modules/events/EventRetention";
+import { startHaRecorder } from "@modules/events/HaRecorder";
+import { haEvents } from "@modules/stream/HaEvents";
 
 const port = Number(process.env.API_PORT ?? 3002);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -38,6 +40,9 @@ async function bootstrap(): Promise<void> {
   // Event log (018): config_changed recorder on the bus, plus the retention job.
   startConfigChangedRecorder();
   startEventRetention();
+  // Always-on HA link (019): recorder first so the boot connection is logged, then keep the socket open.
+  startHaRecorder();
+  haEvents.keepAlive();
   app.listen(port, () => Logger.write(`API listening on port ${port}`));
 }
 
