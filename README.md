@@ -46,6 +46,7 @@ stable snake_case code, never a stack.
 | `API_PORT` | Listen port (container uses 3002). |
 | `HA_URL` | Home Assistant base URL, e.g. `http://192.168.50.200:8123`. |
 | `HA_TOKEN` | HA long-lived token. Never commit or expose to the frontend. |
+| `HA_RELOAD_DOMAINS` | Comma list of HA integrations whose config entries `POST /api/ha/reload` may reload (default `tuya,localtuya`). Empty value disables the endpoint (400 `reload_disabled`). |
 | `HA_TIMEOUT_MS` | Timeout per request to HA, integer 1000..30000 (default `5000`). Invalid values fall back to the default with a startup WARN. |
 | `API_TOKEN` | Required in prod. `/api/*` needs `Authorization: Bearer <API_TOKEN>` except `GET /api/health`. Empty disables the gate (local dev). |
 | `CORS_ORIGINS` | Comma-separated allowlist, e.g. `https://home-control.hectorrdez.es,http://localhost:5173`. |

@@ -141,6 +141,12 @@ export class HaCache {
     return true;
   }
 
+  /** Forces a re-read of the three registries (after a config reload), through the same debounced path as the events. No-op while the link is down. */
+  refreshRegistries(): void {
+    if (!this.send) return;
+    for (const kind of ["area_registry", "device_registry", "entity_registry"] as const) this.schedule(kind, 0);
+  }
+
   /** True when a subscription id belongs to a registry event. */
   ownsSubscription(id: number): boolean {
     return this.subscriptions.has(id);
