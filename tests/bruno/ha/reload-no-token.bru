@@ -1,0 +1,21 @@
+meta {
+  name: HA reload without token is 401
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/ha/reload
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("the API key gate runs before any reload, so HA is never called", function() {
+    expect(res.status).to.equal(401);
+  });
+}

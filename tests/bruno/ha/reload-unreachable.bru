@@ -1,0 +1,29 @@
+meta {
+  name: HA reload returns 502 when HA is unreachable
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/ha/reload
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{process.env.API_TOKEN}}
+}
+
+assert {
+  res.status: eq 502
+  res.body.error: eq ha_unreachable
+}
+
+tests {
+  test("an unreachable Home Assistant is mapped to 502 without leaking details", function() {
+    expect(res.status).to.equal(502);
+    expect(res.body.error).to.equal("ha_unreachable");
+    expect(JSON.stringify(res.body)).not.to.include("127.0.0.1:9");
+    expect(JSON.stringify(res.body)).not.to.include("fake-ha-token");
+  });
+}

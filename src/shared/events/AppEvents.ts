@@ -4,7 +4,7 @@ import type { EventView } from "@modules/events/EventLog";
 import type { AlertView } from "@modules/alerts/AlertService";
 
 /** Resources whose changes are announced on the SSE stream. */
-export type ChangeResource = "aliases" | "calibrations" | "alert_rules" | "settings" | "presets";
+export type ChangeResource = "aliases" | "calibrations" | "alert_rules" | "settings" | "presets" | "entities" | "areas";
 
 /**
  * Application events published on the change bus. Later features extend this
