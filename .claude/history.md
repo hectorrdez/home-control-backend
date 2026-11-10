@@ -26,4 +26,4 @@ id|slug|state|role|commit|commit_url
 021|actuator-presets|ENDED|backend|945d04b|https://github.com/hectorrdez/home-control-backend/commit/945d04b
 022|ha-client-hardening|ENDED|backend|95d2b28|https://github.com/hectorrdez/home-control-backend/commit/95d2b28
 023|ha-state-cache|ENDED|backend|908f387|https://github.com/hectorrdez/home-control-backend/commit/908f387
-024|ha-reload-integrations|PENDING|backend
+024|ha-reload-integrations|PENDING|backend|a64d379|https://github.com/hectorrdez/home-control-backend/commit/a64d379
