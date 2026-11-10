@@ -207,23 +207,104 @@ describe("settleEntityCount", () => {
   });
 });
 
-describe("POST /api/ha/reload (real app, HA never called)", () => {
-  it("empty HA_RELOAD_DOMAINS -> 400 reload_disabled, and HA is not touched", async () => {
-    process.env.API_TOKEN = "api-token-test";
+describe("POST /api/ha/reload (real app)", () => {
+  const TOKEN = "api-token-test";
+
+  /** Fresh module graph per startApp: take the HA client mock the app is using. */
+  async function haClient() {
+    const mod = await import("@modules/ha/HaClient");
+    return { get: vi.mocked(mod.haGet), post: vi.mocked(mod.haPostJson) };
+  }
+
+  /** Error from the same module graph as the app (startApp resets it, so the top-level class would not match instanceof). */
+  async function unreachable() {
+    const errors = await import("@modules/ha/HaErrors");
+    return new errors.HaUnreachableError();
+  }
+
+  function reloadCall(base: string) {
+    return fetch(`${base}/ha/reload`, { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } });
+  }
+
+  beforeEach(() => {
+    process.env.API_TOKEN = TOKEN;
+    delete process.env.HA_RELOAD_DOMAINS;
+  });
+
+  afterEach(() => {
+    delete process.env.API_TOKEN;
+    delete process.env.HA_RELOAD_DOMAINS;
+  });
+
+  it("HA unreachable on the list (502) does not start the cooldown, and the lock is released", async () => {
+    const app = await startApp();
+    try {
+      const ha = await haClient();
+      ha.get.mockRejectedValue(await unreachable());
+      const first = await reloadCall(app.base);
+      expect(first.status).toBe(502);
+      expect((await first.json()).error).toBe("ha_unreachable");
+      const second = await reloadCall(app.base);
+      expect(second.status).toBe(502); // not 429 reload_cooldown, and not 409 reload_in_progress
+      expect((await second.json()).error).toBe("ha_unreachable");
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("empty allow-list (400) does not start the cooldown", async () => {
     process.env.HA_RELOAD_DOMAINS = "";
     const app = await startApp();
     try {
-      const res = await fetch(`${app.base}/ha/reload`, {
-        method: "POST",
-        headers: { Authorization: "Bearer api-token-test" },
-      });
-      expect(res.status).toBe(400);
-      expect((await res.json()).error).toBe("reload_disabled");
-      expect(getMock).not.toHaveBeenCalled();
-      expect(postMock).not.toHaveBeenCalled();
+      const ha = await haClient();
+      const first = await reloadCall(app.base);
+      expect(first.status).toBe(400);
+      expect((await first.json()).error).toBe("reload_disabled");
+      expect(ha.get).not.toHaveBeenCalled();
+      expect(ha.post).not.toHaveBeenCalled();
+      delete process.env.HA_RELOAD_DOMAINS;
+      ha.get.mockResolvedValue([]);
+      const second = await reloadCall(app.base);
+      expect(second.status).toBe(200);
     } finally {
       await app.close();
-      delete process.env.API_TOKEN;
+    }
+  });
+
+  it("no matching entries (200, data []) does not start the cooldown", async () => {
+    const app = await startApp();
+    try {
+      const ha = await haClient();
+      ha.get.mockResolvedValue([{ entry_id: "d4", domain: "hue", disabled_by: null }]);
+      for (let i = 0; i < 2; i++) {
+        const res = await reloadCall(app.base);
+        expect(res.status).toBe(200);
+        expect((await res.json()).data).toEqual([]);
+      }
+      expect(ha.post).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("cooldown still applies after a real reload attempt, even if that entry failed", async () => {
+    const app = await startApp();
+    try {
+      const ha = await haClient();
+      ha.get.mockResolvedValue([{ entry_id: "a1", domain: "tuya", title: "A", disabled_by: null }]);
+      ha.post.mockRejectedValue(await unreachable());
+      const first = await reloadCall(app.base);
+      expect(first.status).toBe(200);
+      const body = await first.json();
+      expect(body.data).toEqual([{ entryId: "a1", domain: "tuya", title: "A", ok: false, error: "ha_unreachable" }]);
+      const second = await reloadCall(app.base);
+      expect(second.status).toBe(429);
+      const limited = await second.json();
+      expect(limited.error).toBe("reload_cooldown");
+      expect(limited.meta.retryAfterSeconds).toBeGreaterThan(0);
+      expect(second.headers.get("retry-after")).toBe(String(limited.meta.retryAfterSeconds));
+    } finally {
+      await app.close();
     }
   });
 
@@ -248,10 +329,10 @@ describe("ReloadGate", () => {
     expect(() => gate.acquire(1)).toThrow(ReloadInProgressError);
   });
 
-  it("within 30 s after release -> reload_cooldown (429) with retryAfterSeconds", () => {
+  it("within 30 s after a real attempt -> reload_cooldown (429) with retryAfterSeconds", () => {
     const gate = new ReloadGate();
     gate.acquire(0);
-    gate.release(10_000);
+    gate.release(10_000, true);
     try {
       gate.acquire(11_000);
       throw new Error("expected cooldown");
@@ -265,7 +346,21 @@ describe("ReloadGate", () => {
   it("allows a reload again once the cooldown has passed", () => {
     const gate = new ReloadGate();
     gate.acquire(0);
-    gate.release(10_000);
+    gate.release(10_000, true);
     expect(() => gate.acquire(40_000)).not.toThrow();
+  });
+
+  it("a release without a reload attempt does not start the cooldown", () => {
+    const gate = new ReloadGate();
+    gate.acquire(0);
+    gate.release(10_000, false);
+    expect(() => gate.acquire(10_001)).not.toThrow();
+  });
+
+  it("the lock is freed on release even when nothing was attempted", () => {
+    const gate = new ReloadGate();
+    gate.acquire(0);
+    gate.release(1, false);
+    expect(() => gate.acquire(2)).not.toThrow();
   });
 });

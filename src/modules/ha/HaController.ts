@@ -19,12 +19,16 @@ export default class HaController extends Controller {
       }
       throw err;
     }
+    // The cooldown starts only once a reload request really reached HA.
+    let attempted = false;
     try {
-      const outcome = await reloadHaIntegrations(domains, res.locals.clientId ?? null);
+      const outcome = await reloadHaIntegrations(domains, res.locals.clientId ?? null, undefined, () => {
+        attempted = true;
+      });
       new HaReloadView(res, outcome).send();
       return HANDLED;
     } finally {
-      reloadGate.release();
+      reloadGate.release(Date.now(), attempted);
     }
   });
 }

@@ -65,9 +65,14 @@ export class ReloadGate {
     this.running = true;
   }
 
-  release(now: number = Date.now()): void {
+  /**
+   * Frees the lock. The 30 s cooldown starts only when a reload request was really
+   * sent to HA (`attempted`); failures before that (list call, no matching entries)
+   * leave the next call free to run.
+   */
+  release(now: number = Date.now(), attempted: boolean = false): void {
     this.running = false;
-    this.cooldownUntil = now + COOLDOWN_MS;
+    if (attempted) this.cooldownUntil = now + COOLDOWN_MS;
   }
 }
 
@@ -129,12 +134,14 @@ async function reloadEntry(entry: ConfigEntry): Promise<ReloadEntryResult> {
 /**
  * Reloads the enabled config entries of the allow-listed domains, one after the
  * other, then refreshes the cache registries and announces the change on SSE.
- * Callers must hold reloadGate.
+ * `onAttempt` fires right before each reload request is sent to HA (the caller
+ * uses it to decide whether the cooldown starts). Callers must hold reloadGate.
  */
 export async function reloadHaIntegrations(
   domains: string[],
   clientId: string | null,
-  sleep: Sleep = delay
+  sleep: Sleep = delay,
+  onAttempt?: () => void
 ): Promise<ReloadOutcome> {
   const before = entityCount();
   const entries = await listEntries();
@@ -145,7 +152,10 @@ export async function reloadHaIntegrations(
   }
 
   const data: ReloadEntryResult[] = [];
-  for (const entry of targets) data.push(await reloadEntry(entry));
+  for (const entry of targets) {
+    onAttempt?.();
+    data.push(await reloadEntry(entry));
+  }
 
   haCache.refreshRegistries();
   const after = await settleEntityCount(sleep);
