@@ -20,3 +20,5 @@ data/
 
 # coverage
 coverage/
+.claude/tmp/
+.ts-node/
