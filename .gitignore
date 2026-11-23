@@ -6,7 +6,8 @@ dist/
 *.log
 data/
 
-# harness
+# harness (internal, local only)
+.claude/
 .claude/handoff.md
 .claude/relay.pid
 .claude/relay.state
